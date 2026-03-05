@@ -7,3 +7,7 @@ psycopg2-binary==2.9.11
 sqlparse==0.5.5
 tzdata==2025.3
 whitenoise==6.11.0
+django-allauth==65.14.3
+dj-database-url==3.1.2
+PyJWT==2.11.0
+cryptography==46.0.5
