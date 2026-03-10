@@ -12,3 +12,5 @@
 
 # Keep databases local to avoid conflicts
 .sqlite3
+
+*/migrations
