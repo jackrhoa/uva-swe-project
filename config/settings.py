@@ -102,7 +102,10 @@ SOCIALACCOUNT_LOGIN_ON_GET = True   # skip the "confirm with Google" interstitia
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'SCOPE': ['profile', 'email'],
-        'AUTH_PARAMS': {'access_type': 'online'},
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+            'prompt': 'select_account' if DEBUG else 'none',
+        },
         'APP': {
             'client_id': os.environ.get('GOOGLE_CLIENT_ID', ''),
             'secret': os.environ.get('GOOGLE_CLIENT_SECRET', ''),

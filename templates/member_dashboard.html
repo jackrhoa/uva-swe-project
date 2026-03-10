@@ -1,0 +1,10 @@
+<h1>Member Dashboard</h1>
+<p>Welcome, {{ request.user.first_name }}! You are logged in as a <strong>Member</strong>.</p>
+
+<h2>Your Tools</h2>
+<ul>
+    <li><a href="#">My Tasks (coming soon)</a></li>
+    <li><a href="#">Enter Attendance Code (coming soon)</a></li>
+</ul>
+
+<a href="{% url 'profile' %}">My Profile</a> | <a href="/accounts/logout/">Sign Out</a>

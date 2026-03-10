@@ -1,0 +1,12 @@
+<h1>Exec Dashboard</h1>
+<p>Welcome, {{ request.user.first_name }}! You are logged in as an <strong>Exec</strong>.</p>
+
+<h2>Your Tools</h2>
+<ul>
+    <li><a href="{% url 'manage_roles' %}">Manage Member Roles</a></li>
+    <li><a href="#">Create Tasks (coming soon)</a></li>
+    <li><a href="#">Generate Attendance Code (coming soon)</a></li>
+    <li><a href="#">View Attendance Records (coming soon)</a></li>
+</ul>
+
+<a href="{% url 'profile' %}">My Profile</a> | <a href="/accounts/logout/">Sign Out</a>
