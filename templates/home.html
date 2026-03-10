@@ -1,3 +1,11 @@
 <h1>Welcome, {{ request.user.first_name }}!</h1>
 <p>Email: {{ request.user.email }}</p>
+<p>Role: {{ profile.role }}</p>
+
+{% if profile.is_exec %}
+    <p>You are an <strong>Exec</strong> — you can manage your CIO.</p>
+{% else %}
+    <p>You are a <strong>Member</strong> — you can view your tasks and CIO info.</p>
+{% endif %}
+
 <a href="/accounts/logout/">Sign Out</a>
