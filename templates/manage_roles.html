@@ -1,0 +1,26 @@
+<h1>Manage Roles</h1>
+<a href="/">Back to Home</a>
+
+<table>
+    <tr>
+        <th>Email</th>
+        <th>Current Role</th>
+        <th>Change Role</th>
+    </tr>
+    {% for profile in users %}
+    <tr>
+        <td>{{ profile.user.email }}</td>
+        <td>{{ profile.role }}</td>
+        <td>
+            <form method="POST" action="{% url 'change_role' profile.user.id %}">
+                {% csrf_token %}
+                <select name="role">
+                    <option value="member" {% if profile.role == 'member' %}selected{% endif %}>Member</option>
+                    <option value="exec" {% if profile.role == 'exec' %}selected{% endif %}>Exec</option>
+                </select>
+                <button type="submit">Save</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>

@@ -4,8 +4,11 @@
 
 {% if profile.is_exec %}
     <p>You are an <strong>Exec</strong> — you can manage your CIO.</p>
+    <a href="{% url 'manage_roles' %}">Manage Roles</a>
 {% else %}
     <p>You are a <strong>Member</strong> — you can view your tasks and CIO info.</p>
 {% endif %}
+
+<a href="{% url 'profile' %}">My Profile</a>
 
 <a href="/accounts/logout/">Sign Out</a>

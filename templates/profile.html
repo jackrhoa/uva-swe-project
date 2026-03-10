@@ -1,0 +1,15 @@
+<h1>My Profile</h1>
+
+{% if picture %}
+    <img src="{{ picture }}" alt="Profile Picture" width="80" height="80">
+{% endif %}
+
+<p><strong>Name:</strong> {{ request.user.first_name }} {{ request.user.last_name }}</p>
+<p><strong>Email:</strong> {{ request.user.email }}</p>
+<p><strong>Role:</strong> {{ profile.role }}</p>
+
+{% if profile.is_exec %}
+    <p>As an exec, you can <a href="{% url 'manage_roles' %}">manage member roles</a>.</p>
+{% endif %}
+
+<a href="/">Home</a> | <a href="/accounts/logout/">Sign Out</a>
