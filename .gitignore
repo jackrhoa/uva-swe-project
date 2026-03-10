@@ -1,1 +1,14 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+# Editor-based HTTP Client requests
+/httpRequests/
+# Datasource local storage ignored files
+/dataSources/
+/dataSources.local.xml
+
+# Do not push .env secrets to git
 .env
+
+# Keep databases local to avoid conflicts
+.sqlite3
