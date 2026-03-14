@@ -29,7 +29,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'unsafe-dev-key')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.herokuapp.com', 'cio.jackrhoa.com'] # heroku and localhost added
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.herokuapp.com'] # heroku and localhost added
 
 
 # Application definition
