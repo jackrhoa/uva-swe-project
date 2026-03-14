@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Sign Out — CIO Manager{% endblock %}
+
+{% block content %}
+<div style="max-width:440px;margin:3rem auto;" class="animate-in delay-1">
+    <div class="glass-card text-center" style="padding:2.5rem;">
+        <div style="width:60px;height:60px;border-radius:50%;background:rgba(248,113,113,0.1);color:var(--danger);display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;font-size:1.5rem;border:1px solid rgba(248,113,113,0.15);">
+            <i class="bi bi-box-arrow-right"></i>
+        </div>
+        <h1 style="font-family:'Outfit',sans-serif;font-weight:800;font-size:1.4rem;margin-bottom:0.5rem;color:var(--text-primary);">Sign Out</h1>
+        <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:1.75rem;">Are you sure you want to sign out?</p>
+
+        <form method="POST" action="/accounts/logout/">
+            {% csrf_token %}
+            <div class="d-flex gap-2 justify-content-center">
+                <a href="{% url 'home' %}" class="btn-ghost">Cancel</a>
+                <button type="submit" class="btn-gradient" style="background:#ef4444;">
+                    <i class="bi bi-box-arrow-right"></i>Sign Out
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

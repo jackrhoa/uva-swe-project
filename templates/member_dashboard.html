@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — CIO Manager{% endblock %}
+{% block nav_home %}active{% endblock %}
+
+{% block content %}
+<div class="page-header animate-in delay-1">
+    <h1>Welcome back, {{ request.user.first_name }}!</h1>
+    <p class="page-subtitle">You're signed in as a <span class="role-badge member"><i class="bi bi-person-fill"></i> Member</span></p>
+</div>
+
+<div class="row g-3">
+    <div class="col-12 animate-in delay-2">
+        <div class="glass-card">
+            <h2><i class="bi bi-grid-1x2-fill me-2" style="background:var(--gradient-main);-webkit-background-clip:text;-webkit-text-fill-color:transparent;"></i>Your Tools</h2>
+
+            <div class="d-flex flex-column gap-1">
+                <div class="tool-item disabled">
+                    <div class="tool-icon cyan"><i class="bi bi-check2-square"></i></div>
+                    <div>
+                        <div class="tool-label">My Tasks</div>
+                        <div class="tool-desc">View and manage assigned tasks</div>
+                    </div>
+                    <span class="badge-soon">Coming Soon</span>
+                </div>
+
+                <div class="tool-item disabled">
+                    <div class="tool-icon emerald"><i class="bi bi-qr-code-scan"></i></div>
+                    <div>
+                        <div class="tool-label">Enter Attendance Code</div>
+                        <div class="tool-desc">Submit your attendance for meetings</div>
+                    </div>
+                    <span class="badge-soon">Coming Soon</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 animate-in delay-3">
+        <a href="{% url 'profile' %}" class="glass-card d-block text-decoration-none" style="color:inherit;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="tool-icon violet"><i class="bi bi-person-circle"></i></div>
+                <div>
+                    <div class="tool-label">My Profile</div>
+                    <div class="tool-desc">View your account details</div>
+                </div>
+                <i class="bi bi-chevron-right chevron-right"></i>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-6 animate-in delay-4">
+        <a href="{% url 'profile' %}" class="glass-card d-block text-decoration-none" style="color:inherit;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="tool-icon amber"><i class="bi bi-gear-fill"></i></div>
+                <div>
+                    <div class="tool-label">Account Settings</div>
+                    <div class="tool-desc">Email, password, and connections</div>
+                </div>
+                <i class="bi bi-chevron-right chevron-right"></i>
+            </div>
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}My Profile — CIO Manager{% endblock %}
+{% block nav_profile %}active{% endblock %}
+
+{% block content %}
+<div class="page-header animate-in delay-1">
+    <h1>My Profile</h1>
+    <p class="page-subtitle">Your account information</p>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-8 animate-in delay-2">
+        <div class="glass-card">
+            <div class="d-flex align-items-center gap-3 mb-4 pb-3" style="border-bottom:1px solid var(--border-color);">
+                {% if picture %}
+                    <img src="{{ picture }}" alt="Profile Picture" class="profile-avatar">
+                {% else %}
+                    <div class="profile-avatar-placeholder">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+                {% endif %}
+                <div>
+                    <h2 style="font-size:1.3rem;margin-bottom:0.4rem;color:var(--text-primary);">
+                        {{ request.user.first_name }} {{ request.user.last_name }}
+                    </h2>
+                    <span class="role-badge {{ profile.role }}">
+                        <i class="bi bi-{% if profile.is_exec %}shield-fill{% else %}person-fill{% endif %}"></i>
+                        {{ profile.role|title }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="profile-info-row">
+                <span class="profile-info-label">Name</span>
+                <span class="profile-info-value">{{ request.user.first_name }} {{ request.user.last_name }}</span>
+            </div>
+            <div class="profile-info-row">
+                <span class="profile-info-label">Email</span>
+                <span class="profile-info-value">{{ request.user.email }}</span>
+            </div>
+            <div class="profile-info-row">
+                <span class="profile-info-label">Role</span>
+                <span class="profile-info-value" style="text-transform:capitalize;">{{ profile.role }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 animate-in delay-3">
+        <div class="d-flex flex-column gap-3">
+            <div class="glass-card">
+                <h2 style="font-size:0.95rem;">
+                    <i class="bi bi-gear-fill me-2" style="background:var(--gradient-main);-webkit-background-clip:text;-webkit-text-fill-color:transparent;"></i>Account
+                </h2>
+                <div class="d-flex flex-column gap-0">
+                    <a href="/accounts/social/connections/" class="tool-item" style="padding:0.6rem 0.65rem;">
+                        <i class="bi bi-link-45deg" style="color:var(--accent-3);font-size:0.9rem;"></i>
+                        <span class="tool-label" style="font-size:0.85rem;">Connections</span>
+                        <i class="bi bi-chevron-right chevron-right" style="font-size:0.75rem;"></i>
+                    </a>
+                </div>
+            </div>
+
+            {% if profile.is_exec %}
+            <div class="glass-card">
+                <h2 style="font-size:0.95rem;">
+                    <i class="bi bi-shield-fill me-2" style="color:var(--warning);"></i>Exec
+                </h2>
+                <a href="{% url 'manage_roles' %}" class="tool-item" style="padding:0.6rem 0.65rem;">
+                    <i class="bi bi-people-fill" style="color:var(--warning);font-size:0.9rem;"></i>
+                    <span class="tool-label" style="font-size:0.85rem;">Manage Roles</span>
+                    <i class="bi bi-chevron-right chevron-right" style="font-size:0.75rem;"></i>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

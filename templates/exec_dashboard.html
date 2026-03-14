@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Exec Dashboard — CIO Manager{% endblock %}
+{% block nav_home %}active{% endblock %}
+
+{% block content %}
+<div class="page-header animate-in delay-1">
+    <h1>Welcome back, {{ request.user.first_name }}!</h1>
+    <p class="page-subtitle">You're signed in as an <span class="role-badge exec"><i class="bi bi-shield-fill"></i> Exec</span></p>
+</div>
+
+<div class="row g-3">
+    <div class="col-12 animate-in delay-2">
+        <div class="glass-card">
+            <h2><i class="bi bi-lightning-fill me-2" style="background:var(--gradient-main);-webkit-background-clip:text;-webkit-text-fill-color:transparent;"></i>Exec Tools</h2>
+
+            <div class="d-flex flex-column gap-1">
+                <a href="{% url 'manage_roles' %}" class="tool-item">
+                    <div class="tool-icon violet"><i class="bi bi-people-fill"></i></div>
+                    <div>
+                        <div class="tool-label">Manage Member Roles</div>
+                        <div class="tool-desc">Assign exec or member roles</div>
+                    </div>
+                    <i class="bi bi-chevron-right chevron-right"></i>
+                </a>
+
+                <div class="tool-item disabled">
+                    <div class="tool-icon cyan"><i class="bi bi-plus-square-fill"></i></div>
+                    <div>
+                        <div class="tool-label">Create Tasks</div>
+                        <div class="tool-desc">Assign tasks to members</div>
+                    </div>
+                    <span class="badge-soon">Coming Soon</span>
+                </div>
+
+                <div class="tool-item disabled">
+                    <div class="tool-icon emerald"><i class="bi bi-broadcast"></i></div>
+                    <div>
+                        <div class="tool-label">Generate Attendance Code</div>
+                        <div class="tool-desc">Create codes for meeting check-in</div>
+                    </div>
+                    <span class="badge-soon">Coming Soon</span>
+                </div>
+
+                <div class="tool-item disabled">
+                    <div class="tool-icon amber"><i class="bi bi-clipboard-data-fill"></i></div>
+                    <div>
+                        <div class="tool-label">View Attendance Records</div>
+                        <div class="tool-desc">See who attended past meetings</div>
+                    </div>
+                    <span class="badge-soon">Coming Soon</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 animate-in delay-3">
+        <a href="{% url 'profile' %}" class="glass-card d-block text-decoration-none" style="color:inherit;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="tool-icon violet"><i class="bi bi-person-circle"></i></div>
+                <div>
+                    <div class="tool-label">My Profile</div>
+                    <div class="tool-desc">View your account details</div>
+                </div>
+                <i class="bi bi-chevron-right chevron-right"></i>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-6 animate-in delay-4">
+        <a href="{% url 'profile' %}" class="glass-card d-block text-decoration-none" style="color:inherit;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="tool-icon amber"><i class="bi bi-gear-fill"></i></div>
+                <div>
+                    <div class="tool-label">Account Settings</div>
+                    <div class="tool-desc">Email, password, and connections</div>
+                </div>
+                <i class="bi bi-chevron-right chevron-right"></i>
+            </div>
+        </a>
+    </div>
+</div>
+{% endblock %}
