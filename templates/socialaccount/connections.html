@@ -12,17 +12,20 @@
     <div class="glass-card mb-3 animate-in delay-2">
         <h2><i class="bi bi-link-45deg me-2" style="background:var(--gradient-main);-webkit-background-clip:text;-webkit-text-fill-color:transparent;"></i>Connected Accounts</h2>
 
-        {% if socialaccounts %}
+        {% if form.accounts %}
         <form method="POST" action="{% url 'socialaccount_connections' %}" class="allauth-form">
             {% csrf_token %}
-            {% for socialaccount in socialaccounts %}
+            {% for base_account in form.accounts %}
+            {% with account=base_account.get_provider_account %}
             <div class="d-flex align-items-center justify-content-between p-3 mb-2" style="background:rgba(255,255,255,0.02);border-radius:12px;border:1px solid var(--border-color);">
                 <div class="d-flex align-items-center gap-3">
-                    <input type="radio" name="account" value="{{ socialaccount.id }}" id="sa_{{ socialaccount.id }}" style="accent-color:var(--accent-2);">
-                    <label for="sa_{{ socialaccount.id }}" style="margin:0;cursor:pointer;">
-                        <div style="font-weight:600;font-size:0.9rem;color:var(--text-primary);">{{ socialaccount.get_provider_account }}</div>
+                    <input type="radio" name="account" value="{{ base_account.id }}" id="sa_{{ base_account.id }}" style="accent-color:var(--accent-2);">
+                    <label for="sa_{{ base_account.id }}" style="margin:0;cursor:pointer;">
+                        <div style="font-weight:600;font-size:0.9rem;color:var(--text-primary);">
+                            {{ account }}
+                        </div>
                         <div style="font-size:0.78rem;color:var(--text-muted);">
-                            <i class="bi bi-google me-1"></i>{{ socialaccount.provider|title }}
+                            <i class="bi bi-google me-1"></i>{{ base_account.provider|title }}
                         </div>
                     </label>
                 </div>
@@ -30,6 +33,7 @@
                     <i class="bi bi-check-circle-fill me-1"></i>Connected
                 </span>
             </div>
+            {% endwith %}
             {% endfor %}
 
             <button type="submit" class="btn-ghost mt-2" style="font-size:0.8rem;border-color:rgba(248,113,113,0.3);color:var(--danger);">
