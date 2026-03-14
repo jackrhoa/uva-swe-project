@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=General+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');</script>
+    <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));</script>
     <style>
         :root {
             --bg-primary: #0a0e1a;
@@ -671,10 +671,7 @@
             font-weight: 900;
             font-size: 2rem;
             letter-spacing: -0.5px;
-            background: var(--gradient-main);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #3b82f6;
             margin-bottom: 0.4rem;
         }
 
@@ -994,10 +991,10 @@
                 icon.className = theme === 'dark' ? 'bi bi-sun' : 'bi bi-moon';
             }
 
-            updateIcon(html.getAttribute('data-theme') || 'dark');
+            updateIcon(html.getAttribute('data-theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
 
             toggle.addEventListener('click', function () {
-                var current = html.getAttribute('data-theme') || 'dark';
+                var current = html.getAttribute('data-theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
                 var next = current === 'dark' ? 'light' : 'dark';
                 html.setAttribute('data-theme', next);
                 localStorage.setItem('theme', next);
