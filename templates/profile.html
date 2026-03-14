@@ -16,11 +16,11 @@
                     <img src="{{ picture }}" alt="Profile Picture" class="profile-avatar">
                 {% else %}
                     <div class="profile-avatar-placeholder">
-                        {{ request.user.first_name|make_list|first|default:"?" }}
+                        <i class="bi bi-person-fill"></i>
                     </div>
                 {% endif %}
                 <div>
-                    <h2 style="font-size:1.3rem;margin-bottom:0.4rem;background:linear-gradient(135deg,#f1f5f9,#94a3b8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+                    <h2 style="font-size:1.3rem;margin-bottom:0.4rem;color:var(--text-primary);">
                         {{ request.user.first_name }} {{ request.user.last_name }}
                     </h2>
                     <span class="role-badge {{ profile.role }}">
@@ -52,16 +52,6 @@
                     <i class="bi bi-gear-fill me-2" style="background:var(--gradient-main);-webkit-background-clip:text;-webkit-text-fill-color:transparent;"></i>Account
                 </h2>
                 <div class="d-flex flex-column gap-0">
-                    <a href="/accounts/email/" class="tool-item" style="padding:0.6rem 0.65rem;">
-                        <i class="bi bi-envelope-fill" style="color:var(--accent-1);font-size:0.9rem;"></i>
-                        <span class="tool-label" style="font-size:0.85rem;">Change Email</span>
-                        <i class="bi bi-chevron-right chevron-right" style="font-size:0.75rem;"></i>
-                    </a>
-                    <a href="/accounts/password/set/" class="tool-item" style="padding:0.6rem 0.65rem;">
-                        <i class="bi bi-key-fill" style="color:var(--accent-2);font-size:0.9rem;"></i>
-                        <span class="tool-label" style="font-size:0.85rem;">Set Password</span>
-                        <i class="bi bi-chevron-right chevron-right" style="font-size:0.75rem;"></i>
-                    </a>
                     <a href="/accounts/social/connections/" class="tool-item" style="padding:0.6rem 0.65rem;">
                         <i class="bi bi-link-45deg" style="color:var(--accent-3);font-size:0.9rem;"></i>
                         <span class="tool-label" style="font-size:0.85rem;">Connections</span>
