@@ -5,7 +5,6 @@
 {% block content %}
 <div class="page-header animate-in delay-1">
     <h1>Welcome back, {{ request.user.first_name }}!</h1>
-    <p class="page-subtitle">You're signed in as an <span class="role-badge exec"><i class="bi bi-shield-fill"></i> Exec</span></p>
 </div>
 
 <div class="row g-3">
@@ -51,32 +50,6 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <div class="col-md-6 animate-in delay-3">
-        <a href="{% url 'profile' %}" class="glass-card d-block text-decoration-none" style="color:inherit;">
-            <div class="d-flex align-items-center gap-3">
-                <div class="tool-icon violet"><i class="bi bi-person-circle"></i></div>
-                <div>
-                    <div class="tool-label">My Profile</div>
-                    <div class="tool-desc">View your account details</div>
-                </div>
-                <i class="bi bi-chevron-right chevron-right"></i>
-            </div>
-        </a>
-    </div>
-
-    <div class="col-md-6 animate-in delay-4">
-        <a href="{% url 'profile' %}" class="glass-card d-block text-decoration-none" style="color:inherit;">
-            <div class="d-flex align-items-center gap-3">
-                <div class="tool-icon amber"><i class="bi bi-gear-fill"></i></div>
-                <div>
-                    <div class="tool-label">Account Settings</div>
-                    <div class="tool-desc">Email, password, and connections</div>
-                </div>
-                <i class="bi bi-chevron-right chevron-right"></i>
-            </div>
-        </a>
     </div>
 </div>
 {% endblock %}
