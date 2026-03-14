@@ -1,16 +1,15 @@
 # Default ignored files
-/shelf/
-/workspace.xml
-# Editor-based HTTP Client requests
-/httpRequests/
-# Datasource local storage ignored files
-/dataSources/
-/dataSources.local.xml
+.idea/
 
 # Do not push .env secrets to git
 .env
 
 # Keep databases local to avoid conflicts
-.sqlite3
+*.sqlite3
 
+# Python cache
+__pycache__/
+*.pyc
+
+# Migrations
 */migrations
