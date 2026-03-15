@@ -2,8 +2,64 @@
 {% block title %}Manage Teams — CIO Manager{% endblock %} 
 {% block nav_teams %}active{%endblock %} 
 
-{% block extra_css %} 
+{% block extra_css %}
 <style>
+    /* ── Team tag chips ──────────────────────────── */
+    .team-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-family: 'Outfit', sans-serif;
+        font-size: 0.82rem;
+        font-weight: 600;
+        padding: 0.3rem 0.65rem;
+        border-radius: 8px;
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        transition: border-color 0.2s ease;
+    }
+    .team-delete-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 0.9rem;
+        line-height: 1;
+        padding: 0;
+        transition: color 0.15s ease, background 0.15s ease;
+    }
+    .team-delete-btn:hover {
+        color: var(--danger);
+        background: rgba(248, 113, 113, 0.12);
+    }
+
+    /* ── Add-team form input ─────────────────────── */
+    .team-input {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 0.35rem 0.75rem;
+        color: var(--text-primary);
+        font-family: 'General Sans', sans-serif;
+        font-size: 0.82rem;
+        transition: border-color 0.2s ease, background 0.2s ease;
+        outline: none;
+        width: 180px;
+    }
+    .team-input::placeholder { color: var(--text-muted); }
+    .team-input:focus {
+        border-color: var(--accent-2);
+        background: var(--bg-elevated);
+    }
+
+    /* ── Team-select dropdown ────────────────────── */
     .team-select-wrap {
         position: relative;
         display: inline-block;
@@ -27,33 +83,39 @@
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.06em;
-        padding: 0.3rem 1.4rem 0.3rem 0.75rem;
-        min-width: 100px;
+        padding: 0.4rem 1.6rem 0.4rem 0.9rem;
+        min-width: 120px;
         cursor: pointer;
         transition: opacity 0.15s ease;
     }
     .team-select-badge:hover { opacity: 0.8; }
-    .team-select-badge.exec {
-        background: rgba(251, 191, 36, 0.15);
-        color: #fbbf24;
-        border: 1px solid rgba(251, 191, 36, 0.2);
+    .team-select-badge.No\ Team,
+    .team-select-badge.no-team {
+        background: var(--bg-elevated);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
     }
-    .team-select-badge.member {
-        background: rgba(6, 182, 212, 0.12);
-        color: #22d3ee;
-        border: 1px solid rgba(6, 182, 212, 0.2);
+
+    /* light-mode overrides */
+    html[data-theme="light"] .team-tag {
+        background: rgba(0,0,0,0.05);
+        border-color: rgba(0,0,0,0.1);
     }
-    html[data-theme="light"] .team-select-badge.exec {
-        background: rgba(180, 83, 9, 0.1);
-        color: #b45309;
-        border-color: rgba(180, 83, 9, 0.25);
+    html[data-theme="light"] .team-input {
+        background: rgba(0,0,0,0.04);
+        border-color: rgba(0,0,0,0.12);
+        color: var(--text-primary);
     }
-    html[data-theme="light"] .team-select-badge.member {
-        background: rgba(2, 132, 199, 0.1);
-        color: #0284c7;
-        border-color: rgba(2, 132, 199, 0.25);
+    html[data-theme="light"] .team-input:focus {
+        background: rgba(0,0,0,0.06);
     }
-</style> 
+    html[data-theme="light"] .team-select-badge.No\ Team,
+    html[data-theme="light"] .team-select-badge.no-team {
+        background: rgba(0,0,0,0.05);
+        color: var(--text-secondary);
+        border-color: rgba(0,0,0,0.1);
+    }
+</style>
 {% endblock %} 
 
 {% block content %} 
@@ -68,36 +130,40 @@
         </a>
     </div>
 </div>
-<div class="glass-card animate-in delay-1" style="padding:1rem;margin-bottom:1rem;">
-    <h2>Teams</h2>
-    <ul style="display:flex; flex-wrap:wrap; gap:0.5rem; padding:0; list-style:none;">
+<div class="glass-card animate-in delay-2" style="margin-bottom:1rem;">
+    <h2 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;margin-bottom:1rem;color:var(--text-primary);">Teams</h2>
+    <ul style="display:flex; flex-wrap:wrap; gap:0.5rem; padding:0; list-style:none; margin-bottom:1rem;">
         {% for team in teams %}
-        <li style="flex:0 0 auto; display:flex; align-items:center; gap:0.25rem; padding:0.25rem 0.5rem; border:1px solid #ccc; border-radius:5px;">
-            <span>{{ team.name }}</span>
-            {% if team.name != "No Team" %}
-            <form method="POST" action="{% url 'delete_team' team.id %}" style="margin:0;">
-                {% csrf_token %}
-                <button type="submit" style="color:red; background:none; border:none; cursor:pointer;">×</button>
-            </form>
-            {% endif %}
+        <li>
+            <span class="team-tag">
+                {{ team.name }}
+                {% if team.name != "No Team" %}
+                <form method="POST" action="{% url 'delete_team' team.id %}" style="margin:0;display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="team-delete-btn" title="Delete team">×</button>
+                </form>
+                {% endif %}
+            </span>
         </li>
         {% empty %}
-        <li>No teams yet.</li>
+        <li style="color:var(--text-muted);font-size:0.88rem;">No teams yet.</li>
         {% endfor %}
     </ul>
 
-    <form method="POST" action="{% url 'add_team' %}" style="margin-top:0.75rem; display:flex; gap:0.5rem;">
+    <form method="POST" action="{% url 'add_team' %}" style="display:flex; gap:0.5rem; align-items:center;">
         {% csrf_token %}
-        <input type="text" name="team_name" placeholder="New team name" required>
-        <button type="submit">Add</button>
+        <input type="text" name="team_name" placeholder="New team name" class="team-input" maxlength="30" required>
+        <button type="submit" class="btn-gradient" style="padding:0.35rem 0.85rem;font-size:0.82rem;border-radius:8px;">
+            <i class="bi bi-plus-lg"></i>Add
+        </button>
     </form>
 </div>
-<div class="glass-card animate-in delay-2" style="padding:0;overflow:hidden;">
+<div class="glass-card animate-in delay-3" style="padding:0;overflow:hidden;">
     <table class="table-custom">
         <thead>
             <tr>
                 <th>User</th>
-                <th style="width:140px;">Team</th>
+                <th style="width:160px;">Team</th>
             </tr>
         </thead>
         <tbody> 
