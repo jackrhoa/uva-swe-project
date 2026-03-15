@@ -1,8 +1,9 @@
+from django.db import IntegrityError
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from .models import UserProfile
+from .models import Team, UserProfile
 
 @login_required
 def home(request):
@@ -57,3 +58,48 @@ def change_role(request, user_id):
                 return JsonResponse({'ok': True, 'role': new_role})
 
     return redirect('manage_roles')
+
+
+@login_required
+def manage_teams(request):
+    if not request.user.profile.is_exec():
+        return redirect('home')
+    teams = Team.objects.all()
+    users = UserProfile.objects.select_related('user').all()
+    return render(request, 'manage_teams.html', {'users': users , 'teams': teams})
+
+@login_required
+def change_team(request, user_id):
+    if not request.user.profile.is_exec():
+        return redirect('home')
+    if request.method == 'POST':
+        profile = get_object_or_404(UserProfile, user__id=user_id)
+        new_team_id = request.POST.get('team')
+        if new_team_id:
+            new_team = get_object_or_404(Team, id=new_team_id)
+            profile.team = new_team
+            profile.save()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'ok': True, 'team': new_team.name})
+    return redirect('manage_teams')
+
+@login_required
+def add_team(request):
+    if not request.user.profile.is_exec():
+        return redirect('home')
+    if request.method == 'POST':
+        team_name = request.POST.get('team_name')
+        if team_name:
+            try:
+                Team.objects.create(name=team_name)
+            except IntegrityError:
+                pass
+    return redirect('manage_teams')
+
+@login_required
+def delete_team(request, team_id):
+    if not request.user.profile.is_exec():
+        return redirect('home')
+    team = get_object_or_404(Team, id=team_id)
+    team.delete()
+    return redirect('manage_teams')

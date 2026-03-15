@@ -11,4 +11,8 @@ urlpatterns = [
     path('profile/', views.profile, name='profile'),
     path('manage-roles/', views.manage_roles, name='manage_roles'),
     path('change-role/<int:user_id>/', views.change_role, name='change_role'),
+    path('manage-teams/', views.manage_teams, name='manage_teams'),
+    path('change-team/<int:user_id>/', views.change_team, name='change_team'),
+    path('add-team/', views.add_team, name='add_team'),
+    path('delete-team/<int:team_id>/', views.delete_team, name='delete_team'),
 ]
