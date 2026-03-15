@@ -459,6 +459,54 @@
             background: rgba(255,255,255,0.03);
         }
 
+        .profile-action-btn {
+            background: rgba(255,255,255,0.04);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+
+        .profile-action-btn:hover {
+            background: rgba(255,255,255,0.08);
+            color: var(--text-primary);
+            border-color: var(--border-hover);
+        }
+
+        .profile-input {
+            background: rgba(255,255,255,0.06) !important;
+            color: var(--text-primary) !important;
+            border: 1px solid var(--border-color) !important;
+            transition: all 0.2s ease;
+        }
+
+        .profile-input:focus {
+            background: rgba(255,255,255,0.08) !important;
+            color: var(--text-primary) !important;
+            border-color: var(--accent-2) !important;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.12) !important;
+        }
+
+        .profile-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        html[data-theme="light"] .profile-action-btn {
+            background: rgba(0,0,0,0.04);
+        }
+
+        html[data-theme="light"] .profile-action-btn:hover {
+            background: rgba(0,0,0,0.08);
+            border-color: var(--border-hover);
+        }
+
+        html[data-theme="light"] .profile-input {
+            background: rgba(0,0,0,0.045) !important;
+        }
+
+        html[data-theme="light"] .profile-input:focus {
+            background: rgba(0,0,0,0.07) !important;
+        }
+
         /* ── Google Button ─────────────────────────── */
         .btn-google {
             display: inline-flex;

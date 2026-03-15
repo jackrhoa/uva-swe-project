@@ -8,11 +8,11 @@ class ProfileNameForm(forms.ModelForm):
         fields = ['first_name', 'last_name']
         widgets = {
             'first_name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'First name'
+                'class': 'form-control profile-input',
+                'placeholder': 'First name',
             }),
             'last_name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Last name'
+                'class': 'form-control profile-input',
+                'placeholder': 'Last name',
             }),
         }
