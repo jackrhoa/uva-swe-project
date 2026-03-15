@@ -4,6 +4,8 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from .models import Team, UserProfile
+from .forms import ProfileNameForm
+
 
 @login_required
 def home(request):
@@ -103,3 +105,15 @@ def delete_team(request, team_id):
     team = get_object_or_404(Team, id=team_id)
     team.delete()
     return redirect('manage_teams')
+
+@login_required
+def edit_profile(request):
+    if request.method == 'POST':
+        form = ProfileNameForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            return redirect('profile')
+    else:
+        form = ProfileNameForm(instance=request.user)
+
+    return render(request, 'edit_profile.html', {'form': form})
