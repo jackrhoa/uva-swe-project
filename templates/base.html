@@ -936,8 +936,8 @@
                         </li>
                         {% if request.user.profile.is_exec %}
                         <li class="nav-item">
-                            <a class="nav-link {% block nav_roles %}{% endblock %}" href="{% url 'manage_roles' %}">
-                                <i class="bi bi-people"></i>Roles
+                            <a class="nav-link {% block nav_teams %}{% endblock %}" href="{% url 'manage_teams' %}">
+                                <i class="bi bi-people"></i>Teams
                             </a>
                         </li>
                         {% endif %}

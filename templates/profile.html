@@ -42,6 +42,10 @@
                 <span class="profile-info-label">Role</span>
                 <span class="profile-info-value" style="text-transform:capitalize;">{{ profile.role }}</span>
             </div>
+            <div class="profile-info-row">
+                <span class="profile-info-label">Team</span>
+                <span class="profile-info-value" style="text-transform:capitalize;">{{ profile.team.name }}</span>
+            </div>
         </div>
     </div>
 
@@ -65,9 +69,9 @@
                 <h2 style="font-size:0.95rem;">
                     <i class="bi bi-shield-fill me-2" style="color:var(--warning);"></i>Exec
                 </h2>
-                <a href="{% url 'manage_roles' %}" class="tool-item" style="padding:0.6rem 0.65rem;">
+                <a href="{% url 'manage_teams' %}" class="tool-item" style="padding:0.6rem 0.65rem;">
                     <i class="bi bi-people-fill" style="color:var(--warning);font-size:0.9rem;"></i>
-                    <span class="tool-label" style="font-size:0.85rem;">Manage Roles</span>
+                    <span class="tool-label" style="font-size:0.85rem;">Manage Teams</span>
                     <i class="bi bi-chevron-right chevron-right" style="font-size:0.75rem;"></i>
                 </a>
             </div>
