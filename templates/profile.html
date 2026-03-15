@@ -47,20 +47,7 @@
 
     <div class="col-md-4 animate-in delay-3">
         <div class="d-flex flex-column gap-3">
-            <div class="glass-card">
-                <h2 style="font-size:0.95rem;">
-                    <i class="bi bi-gear-fill me-2" style="background:var(--gradient-main);-webkit-background-clip:text;-webkit-text-fill-color:transparent;"></i>Account
-                </h2>
-                <div class="d-flex flex-column gap-0">
-                    <a href="/accounts/social/connections/" class="tool-item" style="padding:0.6rem 0.65rem;">
-                        <i class="bi bi-link-45deg" style="color:var(--accent-3);font-size:0.9rem;"></i>
-                        <span class="tool-label" style="font-size:0.85rem;">Connections</span>
-                        <i class="bi bi-chevron-right chevron-right" style="font-size:0.75rem;"></i>
-                    </a>
-                </div>
-            </div>
-
-            {% if profile.is_exec %}
+{% if profile.is_exec %}
             <div class="glass-card">
                 <h2 style="font-size:0.95rem;">
                     <i class="bi bi-shield-fill me-2" style="color:var(--warning);"></i>Exec
