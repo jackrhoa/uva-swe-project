@@ -10,3 +10,7 @@
 # Python cache
 __pycache__/
 *.pyc
+
+# Uploaded files
+media/
+message_attachments/

@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from users import views
 
 urlpatterns = [
@@ -16,4 +18,8 @@ urlpatterns = [
     path('add-team/', views.add_team, name='add_team'),
     path('delete-team/<int:team_id>/', views.delete_team, name='delete_team'),
     path('profile/edit/', views.edit_profile, name='edit_profile'),
+    path('messages/', include('messaging.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
