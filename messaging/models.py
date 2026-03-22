@@ -54,6 +54,8 @@ class Message(models.Model):
         null=True
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         sender = self.sender.username if self.sender else 'Deleted User'

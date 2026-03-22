@@ -151,12 +151,16 @@ def message_stream(request, conversation_id):
     since_id = int(request.GET.get('since_id', 0))
 
     def event_stream():
+        from django.utils import timezone
         last_id = since_id
+        last_check = timezone.now()
         while True:
             close_old_connections()
+            now = timezone.now()
+
             new_messages = (
                 conversation.messages
-                .filter(id__gt=last_id)
+                .filter(id__gt=last_id, is_deleted=False)
                 .exclude(sender=request.user)
                 .select_related('sender')
             )
@@ -171,6 +175,16 @@ def message_stream(request, conversation_id):
                 })
                 yield f'data: {payload}\n\n'
                 last_id = msg.id
+
+            deleted_messages = conversation.messages.filter(
+                updated_at__gt=last_check,
+                is_deleted=True,
+            )
+            for msg in deleted_messages:
+                payload = json.dumps({'id': msg.id})
+                yield f'event: deleted\ndata: {payload}\n\n'
+
+            last_check = now
             time.sleep(1)
 
     response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
@@ -186,7 +200,10 @@ def delete_message(request, message_id):
 
     if request.method == 'POST':
         conversation_id = message.conversation_id
-        message.delete()
+        message.is_deleted = True
+        message.content = ''
+        message.attachment = None
+        message.save()
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'ok': True})
         return redirect(f'/messages/?conversation={conversation_id}')

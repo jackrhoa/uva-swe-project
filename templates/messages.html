@@ -336,33 +336,99 @@
         gap: 0.4rem;
     }
 
-    .msg-delete-btn {
+    .msg-deleted-placeholder {
+        font-style: italic;
+        font-size: 0.88rem;
+        color: var(--text-muted);
+    }
+
+    /* ── Three-dot message menu ───────────────────── */
+    .msg-menu-wrap {
+        position: relative;
         display: none;
+        align-items: center;
+        flex-shrink: 0;
+        order: -1; /* sits to the left of the bubble */
+    }
+
+    .chat-bubble-wrap.self:hover .msg-menu-wrap {
+        display: flex;
+    }
+
+    .msg-menu-btn {
         background: none;
         border: none;
         color: var(--text-muted);
-        font-size: 0.8rem;
+        font-size: 1rem;
         cursor: pointer;
         padding: 0.2rem 0.3rem;
         border-radius: 6px;
-        flex-shrink: 0;
-        transition: color 0.15s;
-        position: relative;
+        line-height: 1;
+        transition: color 0.15s, background 0.15s;
     }
 
-    .msg-delete-btn:hover {
-        color: var(--danger);
+    .msg-menu-btn:hover {
+        color: var(--text-primary);
+        background: rgba(255,255,255,0.06);
     }
 
-    .chat-bubble-wrap.self:hover .msg-delete-btn {
-        display: inline-flex;
+    html[data-theme="light"] .msg-menu-btn:hover {
+        background: rgba(0,0,0,0.06);
+    }
+
+    .msg-menu-dropdown {
+        display: none;
+        position: absolute;
+        right: calc(100% + 6px);
+        top: 50%;
+        transform: translateY(-50%);
+        background: var(--bg-card-solid);
+        border: 1px solid var(--border-hover);
+        border-radius: 10px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        z-index: 100;
+        overflow: hidden;
+        white-space: nowrap;
+        min-width: 130px;
+    }
+
+    .msg-menu-dropdown.open { display: block; }
+
+    .msg-menu-item {
+        display: flex;
         align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+        padding: 0.55rem 0.85rem;
+        font-size: 0.88rem;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-primary);
+        text-align: left;
+        transition: background 0.15s;
     }
 
+    .msg-menu-item:hover { background: rgba(255,255,255,0.06); }
+
+    .msg-menu-item.danger { color: var(--danger); }
+
+    .msg-menu-item.danger:hover { background: rgba(248,113,113,0.1); }
+
+    html[data-theme="light"] .msg-menu-dropdown {
+        background: #fff;
+        border-color: rgba(0,0,0,0.12);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    }
+
+    html[data-theme="light"] .msg-menu-item:hover { background: rgba(0,0,0,0.05); }
+
+    /* ── Confirmation popup ───────────────────────── */
     .delete-confirm-popup {
         position: absolute;
-        bottom: calc(100% + 6px);
-        right: 0;
+        right: calc(100% + 6px);
+        top: 50%;
+        transform: translateY(-50%);
         background: var(--bg-card-solid);
         border: 1px solid var(--border-hover);
         border-radius: 10px;
@@ -526,35 +592,44 @@
 
                         <div class="chat-bubble-wrap {% if message.sender == request.user %}self{% endif %}"
                              data-utc="{{ message.created_at.isoformat }}"
-                             {% if message.sender == request.user %}data-message-id="{{ message.id }}"{% endif %}>
-                            <div class="chat-bubble {% if message.sender == request.user %}self{% endif %}">
-                                {% if message.content %}
-                                    <div class="chat-text">{{ message.content }}</div>
-                                {% endif %}
+                             data-message-id="{{ message.id }}">
+                            {% if message.is_deleted %}
+                                <span class="msg-deleted-placeholder">This message was deleted</span>
+                            {% else %}
+                                <div class="chat-bubble {% if message.sender == request.user %}self{% endif %}">
+                                    {% if message.content %}
+                                        <div class="chat-text">{{ message.content }}</div>
+                                    {% endif %}
 
-                                {% if message.attachment %}
-                                    {% with file_url=message.attachment.url|lower %}
-                                        {% if file_url|slice:"-4:" == ".png" or file_url|slice:"-4:" == ".jpg" or file_url|slice:"-5:" == ".jpeg" or file_url|slice:"-4:" == ".gif" or file_url|slice:"-5:" == ".webp" %}
-                                            <div class="mt-2">
-                                                <img src="{{ message.attachment.url }}"
-                                                     alt="Attachment"
-                                                     class="chat-image"
-                                                     onclick="window.open('{{ message.attachment.url }}', '_blank')">
-                                            </div>
-                                        {% else %}
-                                            <div class="mt-2">
-                                                <a href="{{ message.attachment.url }}" target="_blank" class="btn btn-sm profile-action-btn">
-                                                    <i class="bi bi-paperclip me-1"></i>{{ message.attachment.name|cut:"message_attachments/" }}
-                                                </a>
-                                            </div>
-                                        {% endif %}
-                                    {% endwith %}
+                                    {% if message.attachment %}
+                                        {% with file_url=message.attachment.url|lower %}
+                                            {% if file_url|slice:"-4:" == ".png" or file_url|slice:"-4:" == ".jpg" or file_url|slice:"-5:" == ".jpeg" or file_url|slice:"-4:" == ".gif" or file_url|slice:"-5:" == ".webp" %}
+                                                <div class="mt-2">
+                                                    <img src="{{ message.attachment.url }}"
+                                                         alt="Attachment"
+                                                         class="chat-image"
+                                                         onclick="window.open('{{ message.attachment.url }}', '_blank')">
+                                                </div>
+                                            {% else %}
+                                                <div class="mt-2">
+                                                    <a href="{{ message.attachment.url }}" target="_blank" class="btn btn-sm profile-action-btn">
+                                                        <i class="bi bi-paperclip me-1"></i>{{ message.attachment.name|cut:"message_attachments/" }}
+                                                    </a>
+                                                </div>
+                                            {% endif %}
+                                        {% endwith %}
+                                    {% endif %}
+                                </div>
+                                {% if message.sender == request.user %}
+                                    <div class="msg-menu-wrap">
+                                        <button class="msg-menu-btn" title="Message options">&#8942;</button>
+                                        <div class="msg-menu-dropdown">
+                                            <button class="msg-menu-item danger" data-message-id="{{ message.id }}">
+                                                <i class="bi bi-trash3"></i>Delete
+                                            </button>
+                                        </div>
+                                    </div>
                                 {% endif %}
-                            </div>
-                            {% if message.sender == request.user %}
-                                <button class="msg-delete-btn" data-message-id="{{ message.id }}" title="Delete message">
-                                    <i class="bi bi-trash3"></i>
-                                </button>
                             {% endif %}
                         </div>
                     {% empty %}
@@ -786,6 +861,7 @@
             var wrapper = document.createElement('div');
             wrapper.className = 'chat-bubble-wrap' + (message.is_self ? ' self' : '');
             wrapper.dataset.timeMinute = message.created_at_minute;
+            if (message.id) wrapper.dataset.messageId = message.id;
 
             var bubble = document.createElement('div');
             bubble.className = 'chat-bubble' + (message.is_self ? ' self' : '');
@@ -822,12 +898,16 @@
             wrapper.appendChild(bubble);
 
             if (message.is_self && message.id) {
-                var delBtn = document.createElement('button');
-                delBtn.className = 'msg-delete-btn';
-                delBtn.title = 'Delete message';
-                delBtn.dataset.messageId = message.id;
-                delBtn.innerHTML = '<i class="bi bi-trash3"></i>';
-                wrapper.appendChild(delBtn);
+                var menuWrap = document.createElement('div');
+                menuWrap.className = 'msg-menu-wrap';
+                menuWrap.innerHTML =
+                    '<button class="msg-menu-btn" title="Message options">&#8942;</button>' +
+                    '<div class="msg-menu-dropdown">' +
+                        '<button class="msg-menu-item danger" data-message-id="' + message.id + '">' +
+                            '<i class="bi bi-trash3"></i>Delete' +
+                        '</button>' +
+                    '</div>';
+                wrapper.appendChild(menuWrap);
             }
 
             messagesBox.appendChild(wrapper);
@@ -851,19 +931,23 @@
             conversationList.prepend(activeItem);
         }
 
-        function closeDeletePopup() {
-            var existing = document.querySelector('.delete-confirm-popup');
-            if (existing) existing.remove();
+        function closeMenus() {
+            document.querySelectorAll('.msg-menu-dropdown.open').forEach(function(d) {
+                d.classList.remove('open');
+            });
+            document.querySelectorAll('.delete-confirm-popup').forEach(function(p) {
+                p.remove();
+            });
         }
 
         if (messagesBox) {
             messagesBox.addEventListener('click', function(e) {
-                // "Yes" button inside popup
+                // "Yes" — confirm delete
                 var yesBtn = e.target.closest('.delete-confirm-yes');
                 if (yesBtn) {
                     var messageId = yesBtn.dataset.messageId;
                     var wrap = document.querySelector('.chat-bubble-wrap[data-message-id="' + messageId + '"]');
-                    closeDeletePopup();
+                    closeMenus();
                     fetch('/messages/delete/' + messageId + '/', {
                         method: 'POST',
                         headers: {
@@ -873,37 +957,54 @@
                     })
                     .then(function(r) { return r.json(); })
                     .then(function(data) {
-                        if (data.ok && wrap) wrap.remove();
+                        if (data.ok && wrap) {
+                            wrap.innerHTML = '<span class="msg-deleted-placeholder">This message was deleted</span>';
+                            wrap.removeAttribute('data-message-id');
+                        }
                     });
                     return;
                 }
 
-                // "No" button inside popup
+                // "No" — cancel
                 if (e.target.closest('.delete-confirm-no')) {
-                    closeDeletePopup();
+                    closeMenus();
                     return;
                 }
 
-                // Trash button — show popup
-                var btn = e.target.closest('.msg-delete-btn');
-                if (!btn) { closeDeletePopup(); return; }
-                var messageId = btn.dataset.messageId;
-                if (!messageId) return;
+                // Delete menu item — show confirmation
+                var deleteItem = e.target.closest('.msg-menu-item.danger');
+                if (deleteItem) {
+                    var messageId = deleteItem.dataset.messageId;
+                    var menuWrap = deleteItem.closest('.msg-menu-wrap');
+                    closeMenus();
+                    var popup = document.createElement('div');
+                    popup.className = 'delete-confirm-popup';
+                    popup.innerHTML =
+                        'Delete this message?' +
+                        '<button class="delete-confirm-yes" data-message-id="' + messageId + '">Delete</button>' +
+                        '<button class="delete-confirm-no">Cancel</button>';
+                    menuWrap.appendChild(popup);
+                    return;
+                }
 
-                closeDeletePopup();
-                var popup = document.createElement('div');
-                popup.className = 'delete-confirm-popup';
-                popup.innerHTML =
-                    'Delete this message?' +
-                    '<button class="delete-confirm-yes" data-message-id="' + messageId + '">Delete</button>' +
-                    '<button class="delete-confirm-no">Cancel</button>';
-                btn.appendChild(popup);
-            });
+                // Three-dot button — toggle dropdown
+                var menuBtn = e.target.closest('.msg-menu-btn');
+                if (menuBtn) {
+                    e.stopPropagation();
+                    var dropdown = menuBtn.nextElementSibling;
+                    var isOpen = dropdown.classList.contains('open');
+                    closeMenus();
+                    if (!isOpen) dropdown.classList.add('open');
+                    return;
+                }
 
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.msg-delete-btn')) closeDeletePopup();
+                closeMenus();
             });
         }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.msg-menu-wrap')) closeMenus();
+        });
 
         if (attachmentInput) {
             attachmentInput.classList.add('hidden-file-input');
@@ -1008,6 +1109,15 @@
                     updateConversationPreview(msg);
                     if (msg.id > streamSinceId) streamSinceId = msg.id;
                 };
+
+                es.addEventListener('deleted', function(e) {
+                    var data = JSON.parse(e.data);
+                    var wrap = document.querySelector('.chat-bubble-wrap[data-message-id="' + data.id + '"]');
+                    if (wrap) {
+                        wrap.innerHTML = '<span class="msg-deleted-placeholder">This message was deleted</span>';
+                        wrap.removeAttribute('data-message-id');
+                    }
+                });
             }
 
             openStream();
