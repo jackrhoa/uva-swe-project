@@ -23,6 +23,8 @@ def exec_dashboard(request):
 
 @login_required
 def member_dashboard(request):
+    if request.user.profile.is_exec():
+        return redirect('exec_dashboard')
     return render(request, 'member_dashboard.html', {'profile': request.user.profile})
 
 @login_required
