@@ -14,6 +14,7 @@ class UserChoiceField(forms.ModelChoiceField):
 class StartConversationForm(forms.Form):
     recipient = UserChoiceField(
         queryset=User.objects.none(),
+        empty_label='Select a person to message',
         widget=forms.Select(attrs={'class': 'form-select profile-input', 'id': 'recipient-select'})
     )
 
