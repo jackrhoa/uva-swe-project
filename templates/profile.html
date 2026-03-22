@@ -2,6 +2,12 @@
 {% block title %}My Profile — CIO Manager{% endblock %}
 {% block nav_profile %}active{% endblock %}
 
+{% block extra_css %}
+<style>
+    button.tool-item { background: transparent; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="page-header animate-in delay-1">
     <h1>My Profile</h1>
@@ -67,6 +73,52 @@
                 </a>
             </div>
             {% endif %}
+
+            <div class="glass-card">
+                <h2 style="font-size:0.95rem;">
+                    <i class="bi bi-gear-fill me-2" style="color:var(--text-secondary);"></i>Account
+                </h2>
+
+                <!-- Sign Out -->
+                <div id="signout-default">
+                    <button type="button" class="tool-item w-100 text-start border-0" style="padding:0.6rem 0.65rem;cursor:pointer;" onclick="document.getElementById('signout-default').style.display='none';document.getElementById('signout-confirm').style.display='block';">
+                        <i class="bi bi-box-arrow-right" style="color:var(--text-secondary);font-size:0.9rem;"></i>
+                        <span class="tool-label" style="font-size:0.85rem;">Sign Out</span>
+                        <i class="bi bi-chevron-right chevron-right" style="font-size:0.75rem;"></i>
+                    </button>
+                </div>
+                <div id="signout-confirm" style="display:none;padding:0.6rem 0.65rem;">
+                    <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.5rem;">Are you sure you want to sign out?</p>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm profile-action-btn" onclick="document.getElementById('signout-confirm').style.display='none';document.getElementById('signout-default').style.display='block';">Cancel</button>
+                        <form method="post" action="{% url 'account_logout' %}" style="margin:0;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm" style="background:var(--text-secondary);color:#fff;border:none;border-radius:8px;padding:0.3rem 0.8rem;font-size:0.82rem;">Sign Out</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Delete Account (members only) -->
+                {% if not profile.is_exec %}
+                <div id="delete-default">
+                    <button type="button" class="tool-item w-100 text-start border-0" style="padding:0.6rem 0.65rem;cursor:pointer;" onclick="document.getElementById('delete-default').style.display='none';document.getElementById('delete-confirm').style.display='block';">
+                        <i class="bi bi-trash3-fill" style="color:var(--danger,#ef4444);font-size:0.9rem;"></i>
+                        <span class="tool-label" style="font-size:0.85rem;color:var(--danger,#ef4444);">Delete Account</span>
+                        <i class="bi bi-chevron-right chevron-right" style="font-size:0.75rem;"></i>
+                    </button>
+                </div>
+                <div id="delete-confirm" style="display:none;padding:0.6rem 0.65rem;">
+                    <p style="font-size:0.82rem;color:var(--danger,#ef4444);margin-bottom:0.5rem;">Permanently delete your account? This cannot be undone.</p>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm profile-action-btn" onclick="document.getElementById('delete-confirm').style.display='none';document.getElementById('delete-default').style.display='block';">Cancel</button>
+                        <form method="post" action="{% url 'delete_account' %}" style="margin:0;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm" style="background:var(--danger,#ef4444);color:#fff;border:none;border-radius:8px;padding:0.3rem 0.8rem;font-size:0.82rem;">Delete</button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>

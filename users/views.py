@@ -1,6 +1,7 @@
 from django.db import IntegrityError
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
+from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from .models import Team, UserProfile
@@ -117,3 +118,14 @@ def edit_profile(request):
         form = ProfileNameForm(instance=request.user)
 
     return render(request, 'edit_profile.html', {'form': form})
+
+@login_required
+def delete_account(request):
+    if request.user.profile.is_exec():
+        return redirect('profile')
+    if request.method == 'POST':
+        user = request.user
+        logout(request)
+        user.delete()
+        return redirect('account_login')
+    return redirect('profile')

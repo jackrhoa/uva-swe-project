@@ -18,6 +18,7 @@ urlpatterns = [
     path('add-team/', views.add_team, name='add_team'),
     path('delete-team/<int:team_id>/', views.delete_team, name='delete_team'),
     path('profile/edit/', views.edit_profile, name='edit_profile'),
+    path('profile/delete/', views.delete_account, name='delete_account'),
     path('messages/', include('messaging.urls')),
 ]
 
