@@ -345,14 +345,10 @@
     /* ── Three-dot message menu ───────────────────── */
     .msg-menu-wrap {
         position: relative;
-        display: none;
+        display: flex;
         align-items: center;
         flex-shrink: 0;
-        order: -1; /* sits to the left of the bubble */
-    }
-
-    .chat-bubble-wrap.self:hover .msg-menu-wrap {
-        display: flex;
+        order: -1;
     }
 
     .msg-menu-btn {
@@ -367,68 +363,55 @@
         transition: color 0.15s, background 0.15s;
     }
 
-    .msg-menu-btn:hover {
-        color: var(--text-primary);
-        background: rgba(255,255,255,0.06);
-    }
-
-    html[data-theme="light"] .msg-menu-btn:hover {
-        background: rgba(0,0,0,0.06);
-    }
+    .msg-menu-btn:hover { color: var(--text-primary); }
 
     .msg-menu-dropdown {
         display: none;
         position: absolute;
-        right: calc(100% + 6px);
-        top: 50%;
-        transform: translateY(-50%);
+        bottom: calc(100% + 4px);
+        left: 50%;
+        transform: translateX(-50%);
         background: var(--bg-card-solid);
         border: 1px solid var(--border-hover);
-        border-radius: 10px;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        border-radius: 8px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.35);
         z-index: 100;
         overflow: hidden;
-        white-space: nowrap;
-        min-width: 130px;
     }
 
-    .msg-menu-dropdown.open { display: block; }
+    .msg-menu-dropdown.flip-down {
+        bottom: auto;
+        top: calc(100% + 4px);
+    }
+
+    .msg-menu-wrap.open .msg-menu-dropdown { display: block; }
 
     .msg-menu-item {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        width: 100%;
-        padding: 0.55rem 0.85rem;
-        font-size: 0.88rem;
+        justify-content: center;
+        padding: 0.45rem 0.6rem;
+        font-size: 0.95rem;
         background: none;
         border: none;
         cursor: pointer;
-        color: var(--text-primary);
-        text-align: left;
-        transition: background 0.15s;
+        color: var(--text-muted);
+        transition: color 0.15s, background 0.15s;
     }
 
-    .msg-menu-item:hover { background: rgba(255,255,255,0.06); }
-
-    .msg-menu-item.danger { color: var(--danger); }
-
-    .msg-menu-item.danger:hover { background: rgba(248,113,113,0.1); }
+    .msg-menu-item:hover {
+        color: var(--danger);
+        background: rgba(248,113,113,0.1);
+    }
 
     html[data-theme="light"] .msg-menu-dropdown {
         background: #fff;
         border-color: rgba(0,0,0,0.12);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.12);
     }
-
-    html[data-theme="light"] .msg-menu-item:hover { background: rgba(0,0,0,0.05); }
 
     /* ── Confirmation popup ───────────────────────── */
     .delete-confirm-popup {
-        position: absolute;
-        right: calc(100% + 6px);
-        top: 50%;
-        transform: translateY(-50%);
+        position: fixed;
         background: var(--bg-card-solid);
         border: 1px solid var(--border-hover);
         border-radius: 10px;
@@ -622,10 +605,10 @@
                                 </div>
                                 {% if message.sender == request.user %}
                                     <div class="msg-menu-wrap">
-                                        <button class="msg-menu-btn" title="Message options">&#8942;</button>
+                                        <button class="msg-menu-btn" data-message-id="{{ message.id }}" title="Message options">&#8942;</button>
                                         <div class="msg-menu-dropdown">
-                                            <button class="msg-menu-item danger" data-message-id="{{ message.id }}">
-                                                <i class="bi bi-trash3"></i>Delete
+                                            <button class="msg-menu-item" data-message-id="{{ message.id }}" title="Delete message">
+                                                <i class="bi bi-trash"></i>
                                             </button>
                                         </div>
                                     </div>
@@ -901,10 +884,10 @@
                 var menuWrap = document.createElement('div');
                 menuWrap.className = 'msg-menu-wrap';
                 menuWrap.innerHTML =
-                    '<button class="msg-menu-btn" title="Message options">&#8942;</button>' +
+                    '<button class="msg-menu-btn" data-message-id="' + message.id + '" title="Message options">&#8942;</button>' +
                     '<div class="msg-menu-dropdown">' +
-                        '<button class="msg-menu-item danger" data-message-id="' + message.id + '">' +
-                            '<i class="bi bi-trash3"></i>Delete' +
+                        '<button class="msg-menu-item" data-message-id="' + message.id + '" title="Delete message">' +
+                            '<i class="bi bi-trash"></i>' +
                         '</button>' +
                     '</div>';
                 wrapper.appendChild(menuWrap);
@@ -931,79 +914,94 @@
             conversationList.prepend(activeItem);
         }
 
-        function closeMenus() {
-            document.querySelectorAll('.msg-menu-dropdown.open').forEach(function(d) {
-                d.classList.remove('open');
-            });
-            document.querySelectorAll('.delete-confirm-popup').forEach(function(p) {
-                p.remove();
-            });
+        // Global confirmation popup (fixed-positioned, body-level)
+        var confirmPopup = document.createElement('div');
+        confirmPopup.className = 'delete-confirm-popup';
+        confirmPopup.style.display = 'none';
+        confirmPopup.innerHTML =
+            'Delete this message?' +
+            '<button class="delete-confirm-yes">Delete</button>' +
+            '<button class="delete-confirm-no">Cancel</button>';
+        document.body.appendChild(confirmPopup);
+
+        function closeConfirm() {
+            confirmPopup.style.display = 'none';
+            confirmPopup.dataset.messageId = '';
         }
 
-        if (messagesBox) {
-            messagesBox.addEventListener('click', function(e) {
-                // "Yes" — confirm delete
-                var yesBtn = e.target.closest('.delete-confirm-yes');
-                if (yesBtn) {
-                    var messageId = yesBtn.dataset.messageId;
-                    var wrap = document.querySelector('.chat-bubble-wrap[data-message-id="' + messageId + '"]');
-                    closeMenus();
-                    fetch('/messages/delete/' + messageId + '/', {
-                        method: 'POST',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                        }
-                    })
-                    .then(function(r) { return r.json(); })
-                    .then(function(data) {
-                        if (data.ok && wrap) {
-                            wrap.innerHTML = '<span class="msg-deleted-placeholder">This message was deleted</span>';
-                            wrap.removeAttribute('data-message-id');
-                        }
-                    });
-                    return;
+        confirmPopup.querySelector('.delete-confirm-yes').addEventListener('click', function() {
+            var messageId = confirmPopup.dataset.messageId;
+            if (!messageId) return;
+            var wrap = document.querySelector('.chat-bubble-wrap[data-message-id="' + messageId + '"]');
+            closeConfirm();
+            fetch('/messages/delete/' + messageId + '/', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
                 }
-
-                // "No" — cancel
-                if (e.target.closest('.delete-confirm-no')) {
-                    closeMenus();
-                    return;
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.ok && wrap) {
+                    wrap.innerHTML = '<span class="msg-deleted-placeholder">This message was deleted</span>';
+                    wrap.removeAttribute('data-message-id');
                 }
-
-                // Delete menu item — show confirmation
-                var deleteItem = e.target.closest('.msg-menu-item.danger');
-                if (deleteItem) {
-                    var messageId = deleteItem.dataset.messageId;
-                    var menuWrap = deleteItem.closest('.msg-menu-wrap');
-                    closeMenus();
-                    var popup = document.createElement('div');
-                    popup.className = 'delete-confirm-popup';
-                    popup.innerHTML =
-                        'Delete this message?' +
-                        '<button class="delete-confirm-yes" data-message-id="' + messageId + '">Delete</button>' +
-                        '<button class="delete-confirm-no">Cancel</button>';
-                    menuWrap.appendChild(popup);
-                    return;
-                }
-
-                // Three-dot button — toggle dropdown
-                var menuBtn = e.target.closest('.msg-menu-btn');
-                if (menuBtn) {
-                    e.stopPropagation();
-                    var dropdown = menuBtn.nextElementSibling;
-                    var isOpen = dropdown.classList.contains('open');
-                    closeMenus();
-                    if (!isOpen) dropdown.classList.add('open');
-                    return;
-                }
-
-                closeMenus();
             });
-        }
+        });
+
+        confirmPopup.querySelector('.delete-confirm-no').addEventListener('click', closeConfirm);
 
         document.addEventListener('click', function(e) {
-            if (!e.target.closest('.msg-menu-wrap')) closeMenus();
+            if (!e.target.closest('.delete-confirm-popup') && !e.target.closest('.msg-menu-item')) {
+                closeConfirm();
+            }
+        });
+
+        // Toggle the menu open/closed when clicking the ⋮ button
+        document.addEventListener('click', function(e) {
+            var btn = e.target.closest('.msg-menu-btn');
+            if (btn) {
+                e.stopPropagation();
+                var wrap = btn.closest('.msg-menu-wrap');
+                var isOpen = wrap.classList.contains('open');
+                document.querySelectorAll('.msg-menu-wrap.open').forEach(function(w) { w.classList.remove('open'); });
+                if (!isOpen) {
+                    wrap.classList.add('open');
+                    var dropdown = wrap.querySelector('.msg-menu-dropdown');
+                    var rect = btn.getBoundingClientRect();
+                    var dropdownHeight = dropdown.offsetHeight || 40;
+                    var container = document.getElementById('chat-messages');
+                    var containerTop = container ? container.getBoundingClientRect().top : 0;
+                    dropdown.classList.toggle('flip-down', rect.top - dropdownHeight < containerTop);
+                }
+                return;
+            }
+            // Close any open menu when clicking outside
+            if (!e.target.closest('.msg-menu-wrap')) {
+                document.querySelectorAll('.msg-menu-wrap.open').forEach(function(w) { w.classList.remove('open'); });
+            }
+        });
+
+        // Clicking the trash item shows the confirm popup anchored to the ⋮ button
+        document.addEventListener('click', function(e) {
+            var item = e.target.closest('.msg-menu-item');
+            if (!item) return;
+            var messageId = item.dataset.messageId;
+            if (!messageId) return;
+            var menuWrap = item.closest('.msg-menu-wrap');
+            menuWrap.classList.remove('open');
+            var anchor = menuWrap.querySelector('.msg-menu-btn');
+            confirmPopup.dataset.messageId = messageId;
+            confirmPopup.style.display = 'flex';
+            var r = anchor.getBoundingClientRect();
+            var pw = confirmPopup.offsetWidth;
+            var ph = confirmPopup.offsetHeight;
+            var top = r.top - ph - 6;
+            if (top < 4) top = r.bottom + 6;
+            var left = r.left + r.width / 2 - pw / 2;
+            confirmPopup.style.top  = Math.max(4, top) + 'px';
+            confirmPopup.style.left = Math.max(4, Math.min(left, window.innerWidth - pw - 4)) + 'px';
         });
 
         if (attachmentInput) {
