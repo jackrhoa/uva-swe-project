@@ -13,11 +13,11 @@ def get_allowed_users(current_user):
     current_profile = current_user.profile
 
     if current_profile.is_exec():
-        return User.objects.select_related('profile').all()
+        return User.objects.exclude(pk=current_user.pk).select_related('profile')
 
     return User.objects.filter(
         profile__team=current_profile.team
-    ).select_related('profile')
+    ).exclude(pk=current_user.pk).select_related('profile')
 
 
 @login_required
