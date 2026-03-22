@@ -331,6 +331,89 @@
         margin-bottom: 0.9rem;
     }
 
+    .chat-bubble-wrap.self {
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .msg-delete-btn {
+        display: none;
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        cursor: pointer;
+        padding: 0.2rem 0.3rem;
+        border-radius: 6px;
+        flex-shrink: 0;
+        transition: color 0.15s;
+        position: relative;
+    }
+
+    .msg-delete-btn:hover {
+        color: var(--danger);
+    }
+
+    .chat-bubble-wrap.self:hover .msg-delete-btn {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .delete-confirm-popup {
+        position: absolute;
+        bottom: calc(100% + 6px);
+        right: 0;
+        background: var(--bg-card-solid);
+        border: 1px solid var(--border-hover);
+        border-radius: 10px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        padding: 0.6rem 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        white-space: nowrap;
+        z-index: 100;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    .delete-confirm-popup button {
+        border: none;
+        border-radius: 6px;
+        padding: 0.2rem 0.55rem;
+        font-size: 0.82rem;
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+    .delete-confirm-yes {
+        background: rgba(248,113,113,0.15);
+        color: var(--danger);
+    }
+
+    .delete-confirm-yes:hover { background: rgba(248,113,113,0.28); }
+
+    .delete-confirm-no {
+        background: rgba(255,255,255,0.06);
+        color: var(--text-secondary);
+    }
+
+    .delete-confirm-no:hover { background: rgba(255,255,255,0.12); }
+
+    html[data-theme="light"] .delete-confirm-popup {
+        background: #fff;
+        border-color: rgba(0,0,0,0.12);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    }
+
+    html[data-theme="light"] .delete-confirm-no {
+        background: rgba(0,0,0,0.05);
+    }
+
+    html[data-theme="light"] .delete-confirm-no:hover {
+        background: rgba(0,0,0,0.1);
+    }
+
     .send-loading {
         opacity: 0.6;
         pointer-events: none;
@@ -395,25 +478,25 @@
                     <a href="{% url 'message_list' %}?conversation={{ item.conversation.id }}"
                        class="tool-item {% if active_conversation and active_conversation.id == item.conversation.id %}profile-action-btn{% endif %}"
                        data-conversation-id="{{ item.conversation.id }}">
-                        {% with first=item.other_user.first_name|default:"" last=item.other_user.last_name|default:"" %}
-                            {% if first or last %}
-                                <div class="avatar-initials">
-                                    {{ first|slice:":1" }}{{ last|slice:":1" }}
-                                </div>
-                            {% else %}
-                                <div class="tool-icon blue">
-                                    <i class="bi bi-person-fill"></i>
-                                </div>
-                            {% endif %}
-                        {% endwith %}
-                        <div>
-                            <div class="tool-label">
-                                {{ item.other_user.first_name }} {{ item.other_user.last_name }}
+                        {% if item.other_user %}
+                            {% with first=item.other_user.first_name|default:"" last=item.other_user.last_name|default:"" %}
+                                {% if first or last %}
+                                    <div class="avatar-initials">{{ first|slice:":1" }}{{ last|slice:":1" }}</div>
+                                {% else %}
+                                    <div class="tool-icon blue"><i class="bi bi-person-fill"></i></div>
+                                {% endif %}
+                            {% endwith %}
+                            <div>
+                                <div class="tool-label">{{ item.other_user.first_name }} {{ item.other_user.last_name }}</div>
+                                <div class="tool-desc conversation-preview">{{ item.other_user.email }}</div>
                             </div>
-                            <div class="tool-desc conversation-preview">
-                                {{ item.other_user.email }}
+                        {% else %}
+                            <div class="tool-icon blue"><i class="bi bi-person-fill"></i></div>
+                            <div>
+                                <div class="tool-label" style="color:var(--text-muted);font-style:italic;">Deleted User</div>
+                                <div class="tool-desc conversation-preview">Account removed</div>
                             </div>
-                        </div>
+                        {% endif %}
                     </a>
                 {% empty %}
                     <div class="tool-desc">No conversations yet.</div>
@@ -425,19 +508,25 @@
     <div class="col-lg-8 animate-in delay-3">
         <div class="glass-card chat-panel">
             {% if active_conversation %}
-                <h2>Chat with {{ active_other_user.first_name }} {{ active_other_user.last_name }}</h2>
-                <div class="tool-desc mb-3">{{ active_other_user.email }}</div>
+                {% if active_other_user %}
+                    <h2>Chat with {{ active_other_user.first_name }} {{ active_other_user.last_name }}</h2>
+                    <div class="tool-desc mb-3">{{ active_other_user.email }}</div>
+                {% else %}
+                    <h2>Chat with <span style="color:var(--text-muted);font-style:italic;">Deleted User</span></h2>
+                    <div class="tool-desc mb-3">Account removed</div>
+                {% endif %}
 
                 <div class="chat-messages" id="chat-messages">
                     {% for message in active_conversation.messages.all %}
                         {% ifchanged message.created_at|date:"Y-m-d H:i" %}
-                            <div class="chat-time-separator" data-time-minute="{{ message.created_at|date:'Y-m-d H:i' }}">
-                                <span>{{ message.created_at|date:"M d, Y g:i A" }}</span>
+                            <div class="chat-time-separator" data-utc="{{ message.created_at.isoformat }}">
+                                <span></span>
                             </div>
                         {% endifchanged %}
 
                         <div class="chat-bubble-wrap {% if message.sender == request.user %}self{% endif %}"
-                             data-time-minute="{{ message.created_at|date:'Y-m-d H:i' }}">
+                             data-utc="{{ message.created_at.isoformat }}"
+                             {% if message.sender == request.user %}data-message-id="{{ message.id }}"{% endif %}>
                             <div class="chat-bubble {% if message.sender == request.user %}self{% endif %}">
                                 {% if message.content %}
                                     <div class="chat-text">{{ message.content }}</div>
@@ -462,9 +551,14 @@
                                     {% endwith %}
                                 {% endif %}
                             </div>
+                            {% if message.sender == request.user %}
+                                <button class="msg-delete-btn" data-message-id="{{ message.id }}" title="Delete message">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            {% endif %}
                         </div>
                     {% empty %}
-                        <div class="tool-desc">No messages yet. Start the conversation below.</div>
+                        <div class="tool-desc" id="no-messages-hint">No messages yet. Start the conversation below.</div>
                     {% endfor %}
                 </div>
 
@@ -500,6 +594,13 @@
 {% block extra_js %}
 <script>
     var RECIPIENT_OPTIONS = {{ recipient_options_json|safe }};
+    {% if active_conversation %}
+    var POLL_CONVERSATION_ID = {{ active_conversation.id }};
+    var POLL_SINCE_ID = {{ active_conversation.messages.last.id|default:0 }};
+    {% else %}
+    var POLL_CONVERSATION_ID = null;
+    var POLL_SINCE_ID = 0;
+    {% endif %}
 </script>
 <script>
     (function () {
@@ -632,18 +733,43 @@
             }
         }
 
-        function maybeInsertTimeSeparator(timeLabel, timeMinute) {
+        function formatLocalTime(date) {
+            return date.toLocaleString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric',
+                hour: 'numeric', minute: '2-digit', hour12: true
+            });
+        }
+
+        function localMinuteKey(date) {
+            return date.getFullYear() + '-' +
+                String(date.getMonth() + 1).padStart(2, '0') + '-' +
+                String(date.getDate()).padStart(2, '0') + ' ' +
+                String(date.getHours()).padStart(2, '0') + ':' +
+                String(date.getMinutes()).padStart(2, '0');
+        }
+
+        // Convert all server-rendered time separators to local time
+        if (messagesBox) {
+            messagesBox.querySelectorAll('.chat-time-separator[data-utc]').forEach(function(el) {
+                var d = new Date(el.dataset.utc);
+                el.querySelector('span').textContent = formatLocalTime(d);
+                el.setAttribute('data-time-minute', localMinuteKey(d));
+            });
+        }
+
+        function maybeInsertTimeSeparator(date) {
             if (!messagesBox) return;
 
+            var minuteKey = localMinuteKey(date);
             var allSeparators = messagesBox.querySelectorAll('.chat-time-separator');
             var lastSeparator = allSeparators.length ? allSeparators[allSeparators.length - 1] : null;
             var lastMinute = lastSeparator ? lastSeparator.getAttribute('data-time-minute') : null;
 
-            if (lastMinute !== timeMinute) {
+            if (lastMinute !== minuteKey) {
                 var separator = document.createElement('div');
                 separator.className = 'chat-time-separator';
-                separator.setAttribute('data-time-minute', timeMinute);
-                separator.innerHTML = '<span>' + escapeHtml(timeLabel) + '</span>';
+                separator.setAttribute('data-time-minute', minuteKey);
+                separator.innerHTML = '<span>' + escapeHtml(formatLocalTime(date)) + '</span>';
                 messagesBox.appendChild(separator);
             }
         }
@@ -651,7 +777,11 @@
         function appendMessage(message) {
             if (!messagesBox) return;
 
-            maybeInsertTimeSeparator(message.created_at_label, message.created_at_minute);
+            var hint = document.getElementById('no-messages-hint');
+            if (hint) hint.remove();
+
+            var date = new Date(message.created_at_iso);
+            maybeInsertTimeSeparator(date);
 
             var wrapper = document.createElement('div');
             wrapper.className = 'chat-bubble-wrap' + (message.is_self ? ' self' : '');
@@ -690,6 +820,16 @@
                 attachmentHtml;
 
             wrapper.appendChild(bubble);
+
+            if (message.is_self && message.id) {
+                var delBtn = document.createElement('button');
+                delBtn.className = 'msg-delete-btn';
+                delBtn.title = 'Delete message';
+                delBtn.dataset.messageId = message.id;
+                delBtn.innerHTML = '<i class="bi bi-trash3"></i>';
+                wrapper.appendChild(delBtn);
+            }
+
             messagesBox.appendChild(wrapper);
             scrollToBottom();
         }
@@ -709,6 +849,60 @@
             }
 
             conversationList.prepend(activeItem);
+        }
+
+        function closeDeletePopup() {
+            var existing = document.querySelector('.delete-confirm-popup');
+            if (existing) existing.remove();
+        }
+
+        if (messagesBox) {
+            messagesBox.addEventListener('click', function(e) {
+                // "Yes" button inside popup
+                var yesBtn = e.target.closest('.delete-confirm-yes');
+                if (yesBtn) {
+                    var messageId = yesBtn.dataset.messageId;
+                    var wrap = document.querySelector('.chat-bubble-wrap[data-message-id="' + messageId + '"]');
+                    closeDeletePopup();
+                    fetch('/messages/delete/' + messageId + '/', {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                        }
+                    })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (data.ok && wrap) wrap.remove();
+                    });
+                    return;
+                }
+
+                // "No" button inside popup
+                if (e.target.closest('.delete-confirm-no')) {
+                    closeDeletePopup();
+                    return;
+                }
+
+                // Trash button — show popup
+                var btn = e.target.closest('.msg-delete-btn');
+                if (!btn) { closeDeletePopup(); return; }
+                var messageId = btn.dataset.messageId;
+                if (!messageId) return;
+
+                closeDeletePopup();
+                var popup = document.createElement('div');
+                popup.className = 'delete-confirm-popup';
+                popup.innerHTML =
+                    'Delete this message?' +
+                    '<button class="delete-confirm-yes" data-message-id="' + messageId + '">Delete</button>' +
+                    '<button class="delete-confirm-no">Cancel</button>';
+                btn.appendChild(popup);
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.msg-delete-btn')) closeDeletePopup();
+            });
         }
 
         if (attachmentInput) {
@@ -768,6 +962,9 @@
                     if (data.ok) {
                         appendMessage(data.message);
                         updateConversationPreview(data.message);
+                        if (typeof streamSinceId !== 'undefined' && data.message.id > streamSinceId) {
+                            streamSinceId = data.message.id;
+                        }
 
                         form.reset();
                         if (fileNameChip) {
@@ -794,6 +991,33 @@
         }
 
         scrollToBottom();
+
+        // ── Server-Sent Events ──────────────────────────
+        if (POLL_CONVERSATION_ID) {
+            var streamSinceId = POLL_SINCE_ID;
+            var es = null;
+
+            function openStream() {
+                if (es) es.close();
+                es = new EventSource(
+                    '/messages/stream/' + POLL_CONVERSATION_ID + '/?since_id=' + streamSinceId
+                );
+                es.onmessage = function(e) {
+                    var msg = JSON.parse(e.data);
+                    appendMessage(msg);
+                    updateConversationPreview(msg);
+                    if (msg.id > streamSinceId) streamSinceId = msg.id;
+                };
+            }
+
+            openStream();
+
+            window.addEventListener('beforeunload', function() {
+                if (es) es.close();
+            });
+        }
+        // ───────────────────────────────────────────────
+
     })();
 </script>
 {% endblock %}
