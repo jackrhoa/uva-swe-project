@@ -1,3 +1,5 @@
+import json
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -37,6 +39,17 @@ def message_list(request):
     allowed_users = get_allowed_users(request.user)
     start_form = StartConversationForm(allowed_users=allowed_users)
 
+    is_exec = request.user.profile.is_exec()
+    recipient_options_json = json.dumps([
+        {
+            'value': str(u.pk),
+            'name': f"{u.first_name} {u.last_name}".strip() or u.email,
+            'email': u.email,
+            'team': u.profile.team.name if is_exec else '',
+        }
+        for u in allowed_users
+    ])
+
     active_conversation = None
     active_other_user = None
     message_form = MessageForm()
@@ -59,6 +72,8 @@ def message_list(request):
         'active_other_user': active_other_user,
         'start_form': start_form,
         'message_form': message_form,
+        'is_exec': is_exec,
+        'recipient_options_json': recipient_options_json,
     }
     return render(request, 'messages.html', context)
 

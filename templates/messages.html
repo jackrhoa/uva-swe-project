@@ -64,11 +64,32 @@
         background: rgba(59,130,246,0.15);
     }
 
+    .person-option-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
     .person-option .person-name { font-weight: 500; }
 
     .person-option .person-email {
         font-size: 0.8rem;
         color: var(--text-muted);
+    }
+
+    .person-team {
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 0.1rem 0.45rem;
+        border-radius: 999px;
+        background: rgba(59,130,246,0.15);
+        color: #60a5fa;
+        white-space: nowrap;
+    }
+
+    html[data-theme="light"] .person-team {
+        background: rgba(59,130,246,0.1);
+        color: #2563eb;
     }
 
     .person-no-results {
@@ -344,6 +365,9 @@
     <div class="col-lg-4 animate-in delay-2">
         <div class="glass-card mb-3 start-conversation-card">
             <h2>Start Conversation</h2>
+            {% if not is_exec %}
+                <p class="tool-desc mb-3" style="margin-top:-0.5rem;">You can message members of your team.</p>
+            {% endif %}
             <form method="post" action="{% url 'start_conversation' %}">
                 {% csrf_token %}
                 <div class="start-select">
@@ -475,6 +499,9 @@
 
 {% block extra_js %}
 <script>
+    var RECIPIENT_OPTIONS = {{ recipient_options_json|safe }};
+</script>
+<script>
     (function () {
         var attachmentInput = document.getElementById('id_attachment');
         var fileNameChip = document.getElementById('selected-file-name');
@@ -491,17 +518,7 @@
             var dropdown     = document.getElementById('person-dropdown');
             if (!hiddenSelect || !searchInput || !dropdown) return;
 
-            // Build option list once from the hidden select
-            var options = Array.from(hiddenSelect.options)
-                .filter(function(o) { return o.value; })
-                .map(function(o) {
-                    var parts = o.text.split(' (');
-                    return {
-                        value: o.value,
-                        name: parts[0] || o.text,
-                        email: parts[1] ? parts[1].replace(')', '') : ''
-                    };
-                });
+            var options = (typeof RECIPIENT_OPTIONS !== 'undefined') ? RECIPIENT_OPTIONS : [];
 
             var activeIndex = -1;
 
@@ -510,8 +527,14 @@
                     dropdown.innerHTML = '<div class="person-no-results">No people found</div>';
                 } else {
                     dropdown.innerHTML = filtered.map(function(o, i) {
+                        var teamBadge = o.team
+                            ? '<span class="person-team">' + o.team + '</span>'
+                            : '';
                         return '<div class="person-option" data-value="' + o.value + '" data-index="' + i + '">' +
-                               '<div class="person-name">' + o.name + '</div>' +
+                               '<div class="person-option-row">' +
+                                   '<div class="person-name">' + o.name + '</div>' +
+                                   teamBadge +
+                               '</div>' +
                                (o.email ? '<div class="person-email">' + o.email + '</div>' : '') +
                                '</div>';
                     }).join('');
