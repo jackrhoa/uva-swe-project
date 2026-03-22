@@ -60,4 +60,13 @@ class Message(models.Model):
     def __str__(self):
         sender = self.sender.username if self.sender else 'Deleted User'
         return f"Message from {sender} at {self.created_at}"
+
+
+class ConversationRead(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='conversation_reads')
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='reads')
+    last_read_message_id = models.IntegerField(default=0)
+
+    class Meta:
+        unique_together = [('user', 'conversation')]
     

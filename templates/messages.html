@@ -314,6 +314,24 @@
         display: none;
     }
 
+
+    .conversation-list .tool-item.has-unread {
+        background: rgba(99, 102, 241, 0.12);
+        border-left: 3px solid var(--primary, #6366f1);
+    }
+
+    .conversation-list .tool-item.has-unread:hover {
+        background: rgba(99, 102, 241, 0.18);
+    }
+
+    html[data-theme="light"] .conversation-list .tool-item.has-unread {
+        background: rgba(99, 102, 241, 0.08);
+    }
+
+    html[data-theme="light"] .conversation-list .tool-item.has-unread:hover {
+        background: rgba(99, 102, 241, 0.14);
+    }
+
     .attachment-chip {
         display: inline-flex;
         align-items: center;
@@ -325,6 +343,28 @@
         font-size: 0.8rem;
         color: var(--text-secondary);
         background: rgba(255,255,255,0.03);
+    }
+
+    .attachment-chip-remove {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        padding: 0;
+        margin-left: 0.1rem;
+        color: var(--text-secondary);
+        cursor: pointer;
+        line-height: 1;
+        font-size: 0.85rem;
+    }
+
+    .attachment-chip:hover .attachment-chip-remove {
+        display: flex;
+    }
+
+    .attachment-chip-remove:hover {
+        color: var(--danger);
     }
 
     .start-select {
@@ -525,7 +565,7 @@
             <div class="d-flex flex-column gap-2 conversation-list" id="conversation-list">
                 {% for item in conversations %}
                     <a href="{% url 'message_list' %}?conversation={{ item.conversation.id }}"
-                       class="tool-item {% if active_conversation and active_conversation.id == item.conversation.id %}profile-action-btn{% endif %}"
+                       class="tool-item {% if active_conversation and active_conversation.id == item.conversation.id %}profile-action-btn{% endif %}{% if item.has_unread %} has-unread{% endif %}"
                        data-conversation-id="{{ item.conversation.id }}">
                         {% if item.other_user %}
                             {% with first=item.other_user.first_name|default:"" last=item.other_user.last_name|default:"" %}
@@ -535,13 +575,23 @@
                                     <div class="tool-icon blue"><i class="bi bi-person-fill"></i></div>
                                 {% endif %}
                             {% endwith %}
-                            <div>
+                            <div style="flex:1;min-width:0;">
                                 <div class="tool-label">{{ item.other_user.first_name }} {{ item.other_user.last_name }}</div>
-                                <div class="tool-desc conversation-preview">{{ item.other_user.email }}</div>
+                                {% if item.last_message %}
+                                    {% if item.last_message.is_deleted %}
+                                        <div class="tool-desc conversation-preview" data-last-message-id="{{ item.last_message.id }}">This message was deleted</div>
+                                    {% elif item.last_message.content %}
+                                        <div class="tool-desc conversation-preview" data-last-message-id="{{ item.last_message.id }}">{% if item.last_message.sender == request.user %}You: {% endif %}{{ item.last_message.content|truncatechars:20 }}</div>
+                                    {% else %}
+                                        <div class="tool-desc conversation-preview" data-last-message-id="{{ item.last_message.id }}">{% if item.last_message.sender == request.user %}You sent an attachment.{% else %}Attachment{% endif %}</div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="tool-desc conversation-preview">{{ item.other_user.email }}</div>
+                                {% endif %}
                             </div>
                         {% else %}
                             <div class="tool-icon blue"><i class="bi bi-person-fill"></i></div>
-                            <div>
+                            <div style="flex:1;min-width:0;">
                                 <div class="tool-label" style="color:var(--text-muted);font-style:italic;">Deleted User</div>
                                 <div class="tool-desc conversation-preview">Account removed</div>
                             </div>
@@ -659,6 +709,7 @@
     var POLL_CONVERSATION_ID = null;
     var POLL_SINCE_ID = 0;
     {% endif %}
+    var GLOBAL_SINCE_ID = {{ global_since_id }};
 </script>
 <script>
     (function () {
@@ -898,20 +949,36 @@
         }
 
         function updateConversationPreview(message) {
-            if (!conversationList) return;
-            var activeItem = conversationList.querySelector('.profile-action-btn');
-            if (!activeItem) return;
+            if (!conversationList || !POLL_CONVERSATION_ID) return;
+            var item = conversationList.querySelector('[data-conversation-id="' + POLL_CONVERSATION_ID + '"]');
+            if (!item) return;
 
-            var preview = activeItem.querySelector('.conversation-preview');
+            var preview = item.querySelector('.conversation-preview');
             if (!preview) return;
 
+            var text;
             if (message.content) {
-                preview.textContent = 'You: ' + message.content;
+                var prefix = message.is_self ? 'You: ' : '';
+                var truncated = message.content.length > 20 ? message.content.slice(0, 20) + '...' : message.content;
+                text = prefix + truncated;
             } else if (message.attachment_name) {
-                preview.textContent = 'You sent an attachment.';
+                text = message.is_self ? 'You sent an attachment.' : 'Attachment';
             }
+            if (text) preview.textContent = text;
+            preview.dataset.lastMessageId = message.id;
 
-            conversationList.prepend(activeItem);
+            conversationList.prepend(item);
+        }
+
+        function updatePreviewForDeletion(messageId) {
+            if (!conversationList || !POLL_CONVERSATION_ID) return;
+            var item = conversationList.querySelector('[data-conversation-id="' + POLL_CONVERSATION_ID + '"]');
+            if (!item) return;
+            var preview = item.querySelector('.conversation-preview');
+            if (!preview) return;
+            if (String(preview.dataset.lastMessageId) === String(messageId)) {
+                preview.textContent = 'This message was deleted';
+            }
         }
 
         // Global confirmation popup (fixed-positioned, body-level)
@@ -946,6 +1013,7 @@
                 if (data.ok && wrap) {
                     wrap.innerHTML = '<span class="msg-deleted-placeholder">This message was deleted</span>';
                     wrap.removeAttribute('data-message-id');
+                    updatePreviewForDeletion(messageId);
                 }
             });
         });
@@ -1004,17 +1072,29 @@
             confirmPopup.style.left = Math.max(4, Math.min(left, window.innerWidth - pw - 4)) + 'px';
         });
 
+        function clearAttachment() {
+            attachmentInput.value = '';
+            fileNameChip.style.display = 'none';
+            fileNameChip.innerHTML = '';
+        }
+
+        function onAttachmentChange() {
+            if (attachmentInput.files.length > 0) {
+                fileNameChip.style.display = 'inline-flex';
+                fileNameChip.innerHTML =
+                    '<i class="bi bi-paperclip"></i>' +
+                    escapeHtml(attachmentInput.files[0].name) +
+                    '<button type="button" class="attachment-chip-remove" title="Remove attachment"><i class="bi bi-x"></i></button>';
+                fileNameChip.querySelector('.attachment-chip-remove').addEventListener('click', clearAttachment);
+            } else {
+                fileNameChip.style.display = 'none';
+                fileNameChip.innerHTML = '';
+            }
+        }
+
         if (attachmentInput) {
             attachmentInput.classList.add('hidden-file-input');
-            attachmentInput.addEventListener('change', function () {
-                if (attachmentInput.files.length > 0) {
-                    fileNameChip.style.display = 'inline-flex';
-                    fileNameChip.innerHTML = '<i class="bi bi-paperclip"></i>' + escapeHtml(attachmentInput.files[0].name);
-                } else {
-                    fileNameChip.style.display = 'none';
-                    fileNameChip.innerHTML = '';
-                }
-            });
+            attachmentInput.addEventListener('change', onAttachmentChange);
         }
 
         if (messageInput) {
@@ -1106,6 +1186,13 @@
                     appendMessage(msg);
                     updateConversationPreview(msg);
                     if (msg.id > streamSinceId) streamSinceId = msg.id;
+                    fetch('/messages/mark-read/' + POLL_CONVERSATION_ID + '/', {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                        }
+                    });
                 };
 
                 es.addEventListener('deleted', function(e) {
@@ -1115,7 +1202,13 @@
                         wrap.innerHTML = '<span class="msg-deleted-placeholder">This message was deleted</span>';
                         wrap.removeAttribute('data-message-id');
                     }
+                    updatePreviewForDeletion(data.id);
                 });
+
+                es.onerror = function() {
+                    es.close();
+                    setTimeout(openStream, 3000);
+                };
             }
 
             openStream();
@@ -1125,6 +1218,56 @@
             });
         }
         // ───────────────────────────────────────────────
+
+        // ── Global SSE (unread previews for inactive convos) ──
+        (function() {
+            var globalSinceId = GLOBAL_SINCE_ID;
+            var ges = null;
+
+            function openGlobalStream() {
+                if (ges) ges.close();
+                ges = new EventSource('/messages/stream/global/?since_id=' + globalSinceId);
+
+                ges.onmessage = function(e) {
+                    var msg = JSON.parse(e.data);
+                    if (msg.id > globalSinceId) globalSinceId = msg.id;
+
+                    // Skip if this is the active conversation (handled by per-convo stream)
+                    if (POLL_CONVERSATION_ID && msg.conversation_id === POLL_CONVERSATION_ID) return;
+
+                    var item = conversationList
+                        ? conversationList.querySelector('[data-conversation-id="' + msg.conversation_id + '"]')
+                        : null;
+                    if (!item) return;
+
+                    // Update preview text
+                    var preview = item.querySelector('.conversation-preview');
+                    if (preview) {
+                        var text = msg.content
+                            ? (msg.content.length > 20 ? msg.content.slice(0, 20) + '...' : msg.content)
+                            : 'Attachment';
+                        preview.textContent = text;
+                        preview.dataset.lastMessageId = msg.id;
+                    }
+
+                    // Show unread highlight and bubble to top
+                    item.classList.add('has-unread');
+                    if (conversationList) conversationList.prepend(item);
+                };
+
+                ges.onerror = function() {
+                    ges.close();
+                    setTimeout(openGlobalStream, 3000);
+                };
+            }
+
+            openGlobalStream();
+
+            window.addEventListener('beforeunload', function() {
+                if (ges) ges.close();
+            });
+        })();
+        // ──────────────────────────────────────────────────────
 
     })();
 </script>

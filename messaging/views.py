@@ -5,12 +5,12 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import close_old_connections
-from django.db.models import Q
+from django.db.models import Max, Q
 from django.http import JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import MessageForm, StartConversationForm
-from .models import Conversation
+from .models import Conversation, ConversationRead, Message
 
 
 def get_allowed_users(current_user):
@@ -30,28 +30,6 @@ def message_list(request):
         Q(user1=request.user) | Q(user2=request.user)
     ).select_related('user1', 'user2').prefetch_related('messages').order_by('-updated_at')
 
-    conversations = []
-    for conversation in conversation_qs:
-        other_user = conversation.user2 if conversation.user1 == request.user else conversation.user1
-        conversations.append({
-            'conversation': conversation,
-            'other_user': other_user,
-        })
-
-    allowed_users = get_allowed_users(request.user)
-    start_form = StartConversationForm(allowed_users=allowed_users)
-
-    is_exec = request.user.profile.is_exec()
-    recipient_options_json = json.dumps([
-        {
-            'value': str(u.pk),
-            'name': f"{u.first_name} {u.last_name}".strip() or u.email,
-            'email': u.email,
-            'team': u.profile.team.name if is_exec else '',
-        }
-        for u in allowed_users
-    ])
-
     active_conversation = None
     active_other_user = None
     message_form = MessageForm()
@@ -67,6 +45,56 @@ def message_list(request):
             if active_conversation.user1 == request.user
             else active_conversation.user1
         )
+        # Mark active conversation as read
+        last_msg = active_conversation.messages.order_by('-id').first()
+        if last_msg:
+            ConversationRead.objects.update_or_create(
+                user=request.user,
+                conversation=active_conversation,
+                defaults={'last_read_message_id': last_msg.id},
+            )
+
+    # Build read map for all conversations
+    read_map = {
+        cr.conversation_id: cr.last_read_message_id
+        for cr in ConversationRead.objects.filter(user=request.user)
+    }
+
+    conversations = []
+    for conversation in conversation_qs:
+        other_user = conversation.user2 if conversation.user1 == request.user else conversation.user1
+        last_message = conversation.messages.order_by('-created_at').first()
+        last_read_id = read_map.get(conversation.id, 0)
+        has_unread = (
+            last_message is not None
+            and not last_message.is_deleted
+            and last_message.sender_id != request.user.id
+            and last_message.id > last_read_id
+        )
+        conversations.append({
+            'conversation': conversation,
+            'other_user': other_user,
+            'last_message': last_message,
+            'has_unread': has_unread,
+        })
+
+    global_since_id = Message.objects.filter(
+        Q(conversation__user1=request.user) | Q(conversation__user2=request.user)
+    ).aggregate(max_id=Max('id'))['max_id'] or 0
+
+    allowed_users = get_allowed_users(request.user)
+    start_form = StartConversationForm(allowed_users=allowed_users)
+
+    is_exec = request.user.profile.is_exec()
+    recipient_options_json = json.dumps([
+        {
+            'value': str(u.pk),
+            'name': f"{u.first_name} {u.last_name}".strip() or u.email,
+            'email': u.email,
+            'team': u.profile.team.name if is_exec else '',
+        }
+        for u in allowed_users
+    ])
 
     context = {
         'conversations': conversations,
@@ -76,6 +104,7 @@ def message_list(request):
         'message_form': message_form,
         'is_exec': is_exec,
         'recipient_options_json': recipient_options_json,
+        'global_since_id': global_since_id,
     }
     return render(request, 'messages.html', context)
 
@@ -209,3 +238,61 @@ def delete_message(request, message_id):
         return redirect(f'/messages/?conversation={conversation_id}')
 
     return JsonResponse({'ok': False}, status=405)
+
+
+@login_required
+def mark_read(request, conversation_id):
+    if request.method != 'POST':
+        return JsonResponse({'ok': False}, status=405)
+    conversation = get_object_or_404(
+        Conversation.objects.filter(
+            Q(user1=request.user) | Q(user2=request.user)
+        ),
+        id=conversation_id
+    )
+    last_msg = conversation.messages.order_by('-id').first()
+    if last_msg:
+        ConversationRead.objects.update_or_create(
+            user=request.user,
+            conversation=conversation,
+            defaults={'last_read_message_id': last_msg.id},
+        )
+    return JsonResponse({'ok': True})
+
+
+def global_message_stream(request):
+    if not request.user.is_authenticated:
+        return StreamingHttpResponse(status=401)
+
+    since_id = int(request.GET.get('since_id', 0))
+
+    def event_stream():
+        last_id = since_id
+        while True:
+            close_old_connections()
+            new_messages = (
+                Message.objects.filter(
+                    Q(conversation__user1=request.user) | Q(conversation__user2=request.user),
+                    id__gt=last_id,
+                    is_deleted=False,
+                )
+                .exclude(sender=request.user)
+                .select_related('sender')
+                .order_by('id')
+            )
+            for msg in new_messages:
+                payload = json.dumps({
+                    'conversation_id': msg.conversation_id,
+                    'id': msg.id,
+                    'content': msg.content,
+                    'attachment_name': msg.attachment.name.split('/')[-1] if msg.attachment else '',
+                })
+                yield f'data: {payload}\n\n'
+                last_id = msg.id
+
+            time.sleep(2)
+
+    response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+    response['Cache-Control'] = 'no-cache'
+    response['X-Accel-Buffering'] = 'no'
+    return response
