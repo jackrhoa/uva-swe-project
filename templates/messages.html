@@ -703,13 +703,10 @@
 <script>
     var RECIPIENT_OPTIONS = {{ recipient_options_json|safe }};
     {% if active_conversation %}
-    var POLL_CONVERSATION_ID = {{ active_conversation.id }};
-    var POLL_SINCE_ID = {{ active_conversation.messages.last.id|default:0 }};
+    var ACTIVE_CONVERSATION_ID = {{ active_conversation.id }};
     {% else %}
-    var POLL_CONVERSATION_ID = null;
-    var POLL_SINCE_ID = 0;
+    var ACTIVE_CONVERSATION_ID = null;
     {% endif %}
-    var GLOBAL_SINCE_ID = {{ global_since_id }};
 </script>
 <script>
     (function () {
@@ -949,8 +946,8 @@
         }
 
         function updateConversationPreview(message) {
-            if (!conversationList || !POLL_CONVERSATION_ID) return;
-            var item = conversationList.querySelector('[data-conversation-id="' + POLL_CONVERSATION_ID + '"]');
+            if (!conversationList || !ACTIVE_CONVERSATION_ID) return;
+            var item = conversationList.querySelector('[data-conversation-id="' + ACTIVE_CONVERSATION_ID + '"]');
             if (!item) return;
 
             var preview = item.querySelector('.conversation-preview');
@@ -971,8 +968,8 @@
         }
 
         function updatePreviewForDeletion(messageId) {
-            if (!conversationList || !POLL_CONVERSATION_ID) return;
-            var item = conversationList.querySelector('[data-conversation-id="' + POLL_CONVERSATION_ID + '"]');
+            if (!conversationList || !ACTIVE_CONVERSATION_ID) return;
+            var item = conversationList.querySelector('[data-conversation-id="' + ACTIVE_CONVERSATION_ID + '"]');
             if (!item) return;
             var preview = item.querySelector('.conversation-preview');
             if (!preview) return;
@@ -1141,10 +1138,6 @@
                     if (data.ok) {
                         appendMessage(data.message);
                         updateConversationPreview(data.message);
-                        if (typeof streamSinceId !== 'undefined' && data.message.id > streamSinceId) {
-                            streamSinceId = data.message.id;
-                        }
-
                         form.reset();
                         if (fileNameChip) {
                             fileNameChip.style.display = 'none';
@@ -1170,104 +1163,6 @@
         }
 
         scrollToBottom();
-
-        // ── Server-Sent Events ──────────────────────────
-        if (POLL_CONVERSATION_ID) {
-            var streamSinceId = POLL_SINCE_ID;
-            var es = null;
-
-            function openStream() {
-                if (es) es.close();
-                es = new EventSource(
-                    '/messages/stream/' + POLL_CONVERSATION_ID + '/?since_id=' + streamSinceId
-                );
-                es.onmessage = function(e) {
-                    var msg = JSON.parse(e.data);
-                    appendMessage(msg);
-                    updateConversationPreview(msg);
-                    if (msg.id > streamSinceId) streamSinceId = msg.id;
-                    fetch('/messages/mark-read/' + POLL_CONVERSATION_ID + '/', {
-                        method: 'POST',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                        }
-                    });
-                };
-
-                es.addEventListener('deleted', function(e) {
-                    var data = JSON.parse(e.data);
-                    var wrap = document.querySelector('.chat-bubble-wrap[data-message-id="' + data.id + '"]');
-                    if (wrap) {
-                        wrap.innerHTML = '<span class="msg-deleted-placeholder">This message was deleted</span>';
-                        wrap.removeAttribute('data-message-id');
-                    }
-                    updatePreviewForDeletion(data.id);
-                });
-
-                es.onerror = function() {
-                    es.close();
-                    setTimeout(openStream, 3000);
-                };
-            }
-
-            openStream();
-
-            window.addEventListener('beforeunload', function() {
-                if (es) es.close();
-            });
-        }
-        // ───────────────────────────────────────────────
-
-        // ── Global SSE (unread previews for inactive convos) ──
-        (function() {
-            var globalSinceId = GLOBAL_SINCE_ID;
-            var ges = null;
-
-            function openGlobalStream() {
-                if (ges) ges.close();
-                ges = new EventSource('/messages/stream/global/?since_id=' + globalSinceId);
-
-                ges.onmessage = function(e) {
-                    var msg = JSON.parse(e.data);
-                    if (msg.id > globalSinceId) globalSinceId = msg.id;
-
-                    // Skip if this is the active conversation (handled by per-convo stream)
-                    if (POLL_CONVERSATION_ID && msg.conversation_id === POLL_CONVERSATION_ID) return;
-
-                    var item = conversationList
-                        ? conversationList.querySelector('[data-conversation-id="' + msg.conversation_id + '"]')
-                        : null;
-                    if (!item) return;
-
-                    // Update preview text
-                    var preview = item.querySelector('.conversation-preview');
-                    if (preview) {
-                        var text = msg.content
-                            ? (msg.content.length > 20 ? msg.content.slice(0, 20) + '...' : msg.content)
-                            : 'Attachment';
-                        preview.textContent = text;
-                        preview.dataset.lastMessageId = msg.id;
-                    }
-
-                    // Show unread highlight and bubble to top
-                    item.classList.add('has-unread');
-                    if (conversationList) conversationList.prepend(item);
-                };
-
-                ges.onerror = function() {
-                    ges.close();
-                    setTimeout(openGlobalStream, 3000);
-                };
-            }
-
-            openGlobalStream();
-
-            window.addEventListener('beforeunload', function() {
-                if (ges) ges.close();
-            });
-        })();
-        // ──────────────────────────────────────────────────────
 
     })();
 </script>

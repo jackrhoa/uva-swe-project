@@ -1,12 +1,10 @@
 import json
-import time
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.db import close_old_connections
-from django.db.models import Max, Q
-from django.http import JsonResponse, StreamingHttpResponse
+from django.db.models import Q
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import MessageForm, StartConversationForm
@@ -78,10 +76,6 @@ def message_list(request):
             'has_unread': has_unread,
         })
 
-    global_since_id = Message.objects.filter(
-        Q(conversation__user1=request.user) | Q(conversation__user2=request.user)
-    ).aggregate(max_id=Max('id'))['max_id'] or 0
-
     allowed_users = get_allowed_users(request.user)
     start_form = StartConversationForm(allowed_users=allowed_users)
 
@@ -104,7 +98,6 @@ def message_list(request):
         'message_form': message_form,
         'is_exec': is_exec,
         'recipient_options_json': recipient_options_json,
-        'global_since_id': global_since_id,
     }
     return render(request, 'messages.html', context)
 
@@ -167,61 +160,6 @@ def send_message(request, conversation_id):
     return redirect(f'/messages/?conversation={conversation.id}')
 
 
-def message_stream(request, conversation_id):
-    if not request.user.is_authenticated:
-        return StreamingHttpResponse(status=401)
-
-    conversation = get_object_or_404(
-        Conversation.objects.filter(
-            Q(user1=request.user) | Q(user2=request.user)
-        ),
-        id=conversation_id
-    )
-    since_id = int(request.GET.get('since_id', 0))
-
-    def event_stream():
-        from django.utils import timezone
-        last_id = since_id
-        last_check = timezone.now()
-        while True:
-            close_old_connections()
-            now = timezone.now()
-
-            new_messages = (
-                conversation.messages
-                .filter(id__gt=last_id, is_deleted=False)
-                .exclude(sender=request.user)
-                .select_related('sender')
-            )
-            for msg in new_messages:
-                payload = json.dumps({
-                    'id': msg.id,
-                    'content': msg.content,
-                    'attachment_url': msg.attachment.url if msg.attachment else '',
-                    'attachment_name': msg.attachment.name.split('/')[-1] if msg.attachment else '',
-                    'created_at_iso': msg.created_at.isoformat(),
-                    'is_self': False,
-                })
-                yield f'data: {payload}\n\n'
-                last_id = msg.id
-
-            deleted_messages = conversation.messages.filter(
-                updated_at__gt=last_check,
-                is_deleted=True,
-            )
-            for msg in deleted_messages:
-                payload = json.dumps({'id': msg.id})
-                yield f'event: deleted\ndata: {payload}\n\n'
-
-            last_check = now
-            time.sleep(1)
-
-    response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
-    response['Cache-Control'] = 'no-cache'
-    response['X-Accel-Buffering'] = 'no'
-    return response
-
-
 @login_required
 def delete_message(request, message_id):
     from .models import Message
@@ -260,39 +198,3 @@ def mark_read(request, conversation_id):
     return JsonResponse({'ok': True})
 
 
-def global_message_stream(request):
-    if not request.user.is_authenticated:
-        return StreamingHttpResponse(status=401)
-
-    since_id = int(request.GET.get('since_id', 0))
-
-    def event_stream():
-        last_id = since_id
-        while True:
-            close_old_connections()
-            new_messages = (
-                Message.objects.filter(
-                    Q(conversation__user1=request.user) | Q(conversation__user2=request.user),
-                    id__gt=last_id,
-                    is_deleted=False,
-                )
-                .exclude(sender=request.user)
-                .select_related('sender')
-                .order_by('id')
-            )
-            for msg in new_messages:
-                payload = json.dumps({
-                    'conversation_id': msg.conversation_id,
-                    'id': msg.id,
-                    'content': msg.content,
-                    'attachment_name': msg.attachment.name.split('/')[-1] if msg.attachment else '',
-                })
-                yield f'data: {payload}\n\n'
-                last_id = msg.id
-
-            time.sleep(2)
-
-    response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
-    response['Cache-Control'] = 'no-cache'
-    response['X-Accel-Buffering'] = 'no'
-    return response
