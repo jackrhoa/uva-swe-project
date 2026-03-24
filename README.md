@@ -4,3 +4,5 @@
 git clone https://github.com/uva-cs3240-s26/project-a-20.git
 cd project-a-20
 ```
+
+CIO Manger - Communicate with your CIO members, take attendance automatically, and more!
