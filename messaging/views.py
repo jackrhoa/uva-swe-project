@@ -7,8 +7,14 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
-from .forms import MessageForm, StartConversationForm
-from .models import Conversation, ConversationRead, Message
+from .forms import MessageForm, StartConversationForm, TeamMessageForm
+from .models import (
+    Conversation,
+    ConversationRead,
+    Message,
+    TeamConversation,
+    TeamMessage,
+)
 
 
 def get_allowed_users(current_user):
@@ -20,6 +26,25 @@ def get_allowed_users(current_user):
     return User.objects.filter(
         profile__team=current_profile.team
     ).exclude(pk=current_user.pk).select_related('profile')
+
+
+def _display_name(user):
+    if not user:
+        return 'Deleted User'
+    full = f"{user.first_name} {user.last_name}".strip()
+    return full or user.email or user.username
+
+
+def _avatar_letters(user):
+    if not user:
+        return '?'
+    first = (user.first_name or '')[:1]
+    last = (user.last_name or '')[:1]
+    letters = (first + last).upper()
+    if letters:
+        return letters
+    fallback = (user.username or user.email or '?')[:1].upper()
+    return fallback
 
 
 @login_required
@@ -43,7 +68,7 @@ def message_list(request):
             if active_conversation.user1 == request.user
             else active_conversation.user1
         )
-        # Mark active conversation as read
+
         last_msg = active_conversation.messages.order_by('-id').first()
         if last_msg:
             ConversationRead.objects.update_or_create(
@@ -52,7 +77,6 @@ def message_list(request):
                 defaults={'last_read_message_id': last_msg.id},
             )
 
-    # Build read map for all conversations
     read_map = {
         cr.conversation_id: cr.last_read_message_id
         for cr in ConversationRead.objects.filter(user=request.user)
@@ -85,7 +109,7 @@ def message_list(request):
             'value': str(u.pk),
             'name': f"{u.first_name} {u.last_name}".strip() or u.email,
             'email': u.email,
-            'team': u.profile.team.name if is_exec else '',
+            'team': u.profile.team.name if is_exec and u.profile.team else '',
         }
         for u in allowed_users
     ])
@@ -162,7 +186,6 @@ def send_message(request, conversation_id):
 
 @login_required
 def delete_message(request, message_id):
-    from .models import Message
     message = get_object_or_404(Message, id=message_id, sender=request.user)
 
     if request.method == 'POST':
@@ -198,3 +221,68 @@ def mark_read(request, conversation_id):
     return JsonResponse({'ok': True})
 
 
+@login_required
+def team_chat(request):
+    profile = request.user.profile
+
+    if not profile.team:
+        messages.error(request, 'You are not assigned to a team.')
+        return redirect('home')
+
+    team_conversation, created = TeamConversation.objects.get_or_create(team=profile.team)
+    team_messages = team_conversation.messages.select_related('sender').order_by('created_at')
+    form = TeamMessageForm()
+
+    context = {
+        'team': profile.team,
+        'team_conversation': team_conversation,
+        'team_messages': team_messages,
+        'message_form': form,
+    }
+    return render(request, 'team_chat.html', context)
+
+
+@login_required
+def send_team_message(request, team_conversation_id):
+    profile = request.user.profile
+
+    team_conversation = get_object_or_404(
+        TeamConversation,
+        id=team_conversation_id,
+        team=profile.team
+    )
+
+    if request.method == 'POST':
+        form = TeamMessageForm(request.POST, request.FILES)
+        if form.is_valid():
+            message = form.save(commit=False)
+            message.team_conversation = team_conversation
+            message.sender = request.user
+            message.save()
+            team_conversation.save()
+
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'ok': True,
+                    'message': {
+                        'id': message.id,
+                        'content': message.content,
+                        'attachment_url': message.attachment.url if message.attachment else '',
+                        'attachment_name': message.attachment.name.split('/')[-1] if message.attachment else '',
+                        'created_at_iso': message.created_at.isoformat(),
+                        'is_self': True,
+                        'sender_name': _display_name(request.user),
+                        'sender_initials': _avatar_letters(request.user),
+                    }
+                })
+
+            return redirect('team_chat')
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'ok': False,
+                'error': form.errors.as_json()
+            }, status=400)
+
+    messages.error(request, 'Could not send team message.')
+    return redirect('team_chat')

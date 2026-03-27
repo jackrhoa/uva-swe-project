@@ -1,0 +1,629 @@
+{% extends "base.html" %}
+{% block title %}Team Chat — CIO Manager{% endblock %}
+{% block nav_team_chat %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-shell {
+        height: 620px;
+    }
+
+    .chat-panel {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 0.35rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        min-height: 320px;
+        max-height: 430px;
+    }
+
+    .chat-time-separator {
+        display: flex;
+        justify-content: center;
+        margin: 0.2rem 0 0.4rem;
+    }
+
+    .chat-time-separator span {
+        font-size: 0.76rem;
+        color: var(--text-muted);
+        padding: 0.15rem 0.6rem;
+        border-radius: 999px;
+        background: transparent;
+    }
+
+    .chat-bubble-wrap {
+        display: flex;
+        align-items: flex-end;
+        gap: 0.5rem;
+    }
+
+    .chat-bubble-wrap.self {
+        justify-content: flex-end;
+    }
+
+    .chat-avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(59,130,246,0.12);
+        color: #60a5fa;
+        font-size: 0.76rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        border: 1px solid var(--border-color);
+    }
+
+    .chat-message-stack {
+        display: flex;
+        flex-direction: column;
+        max-width: 78%;
+    }
+
+    .chat-message-stack.self {
+        align-items: flex-end;
+    }
+
+    .chat-sender {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        margin-bottom: 0.18rem;
+        padding: 0 0.2rem;
+    }
+
+    .chat-image {
+        max-width: 260px;
+        max-height: 260px;
+        border-radius: 14px;
+        cursor: pointer;
+        border: 1px solid var(--border-color);
+        display: block;
+        transition: transform 0.2s ease;
+    }
+
+    .chat-image:hover {
+        transform: scale(1.02);
+    }
+
+    .chat-bubble {
+        max-width: 100%;
+        padding: 0.85rem 1rem;
+        border-radius: 18px;
+        border: 1px solid var(--border-color);
+        background: var(--bg-card);
+    }
+
+    .chat-bubble.self {
+        background: rgba(59,130,246,0.14);
+    }
+
+    .chat-text {
+        white-space: pre-wrap;
+        word-break: break-word;
+        line-height: 1.42;
+        font-size: 0.98rem;
+    }
+
+    .chat-time {
+        margin-top: 0.35rem;
+        font-size: 0.72rem;
+        color: var(--text-muted);
+    }
+
+    .chat-input-bar {
+        margin-top: 1rem;
+        border-top: 1px solid var(--border-color);
+        padding-top: 1rem;
+    }
+
+    .ig-input-shell {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        border: 1px solid var(--border-color);
+        border-radius: 999px;
+        padding: 0.45rem 0.72rem 0.45rem 0.95rem;
+        background: transparent !important;
+        box-shadow: none !important;
+        min-height: 48px;
+    }
+
+    .ig-input-shell:focus-within {
+        background: transparent !important;
+        box-shadow: none !important;
+        border-color: var(--border-color);
+    }
+
+    .ig-message-input,
+    .ig-input-shell textarea,
+    .ig-input-shell .form-control,
+    .ig-input-shell .profile-input {
+        flex: 1;
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        color: var(--text-primary) !important;
+        resize: none;
+        min-height: 24px;
+        height: 24px;
+        max-height: 120px;
+        line-height: 24px;
+        padding: 0 !important;
+        margin: 0 !important;
+        overflow-y: hidden;
+        font-size: 0.98rem;
+        border-radius: 0 !important;
+        vertical-align: middle;
+    }
+
+    .ig-message-input:focus,
+    .ig-input-shell textarea:focus,
+    .ig-input-shell .form-control:focus,
+    .ig-input-shell .profile-input:focus {
+        outline: none !important;
+        box-shadow: none !important;
+        border: none !important;
+        background: transparent !important;
+    }
+
+    .ig-message-input::placeholder {
+        color: var(--text-muted);
+    }
+
+    html[data-theme="light"] .ig-input-shell,
+    html[data-theme="light"] .ig-message-input,
+    html[data-theme="light"] .ig-input-shell textarea,
+    html[data-theme="light"] .ig-input-shell .form-control,
+    html[data-theme="light"] .ig-input-shell .profile-input {
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    html[data-theme="light"] .ig-input-shell:focus-within {
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .ig-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.1rem;
+        flex-shrink: 0;
+        padding-bottom: 0;
+    }
+
+    .icon-inline-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: none;
+        background: transparent;
+        color: var(--text-primary);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.2s ease, transform 0.2s ease;
+        flex-shrink: 0;
+        font-size: 1.05rem;
+        padding: 0;
+    }
+
+    .icon-inline-btn:hover {
+        background: rgba(255,255,255,0.05);
+        transform: scale(1.02);
+    }
+
+    html[data-theme="light"] .icon-inline-btn:hover {
+        background: rgba(0,0,0,0.05);
+    }
+
+    .hidden-file-input {
+        display: none;
+    }
+
+    .attachment-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-top: 0.55rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        border: 1px solid var(--border-color);
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        background: rgba(255,255,255,0.03);
+    }
+
+    .attachment-chip-remove {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        padding: 0;
+        margin-left: 0.1rem;
+        color: var(--text-secondary);
+        cursor: pointer;
+        line-height: 1;
+        font-size: 0.85rem;
+    }
+
+    .attachment-chip:hover .attachment-chip-remove {
+        display: flex;
+    }
+
+    .attachment-chip-remove:hover {
+        color: var(--danger);
+    }
+
+    .send-loading {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+    .msg-empty {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header animate-in delay-1">
+    <h1>Team Chat</h1>
+    <p class="page-subtitle">Chat with members of {{ team.name }}</p>
+</div>
+
+<div class="row justify-content-center chat-shell">
+    <div class="col-lg-9 animate-in delay-2">
+        <div class="glass-card chat-panel">
+            <h2>{{ team.name }}</h2>
+            <div class="tool-desc mb-3">Shared chat for your team</div>
+
+            <div class="chat-messages" id="chat-messages">
+                {% for message in team_messages %}
+                    {% ifchanged message.created_at|date:"Y-m-d H:i" %}
+                        <div class="chat-time-separator" data-utc="{{ message.created_at.isoformat }}">
+                            <span></span>
+                        </div>
+                    {% endifchanged %}
+
+                    <div class="chat-bubble-wrap {% if message.sender == request.user %}self{% endif %}"
+                         data-utc="{{ message.created_at.isoformat }}"
+                         data-message-id="{{ message.id }}">
+                        {% if not message.sender == request.user %}
+                            <div class="chat-avatar">
+                                {% if message.sender %}
+                                    {{ message.sender.first_name|slice:":1" }}{{ message.sender.last_name|slice:":1" }}
+                                {% else %}
+                                    ?
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                        <div class="chat-message-stack {% if message.sender == request.user %}self{% endif %}">
+                            {% if not message.sender == request.user %}
+                                <div class="chat-sender">
+                                    {% if message.sender %}
+                                        {{ message.sender.first_name }} {{ message.sender.last_name }}
+                                    {% else %}
+                                        Deleted User
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+
+                            <div class="chat-bubble {% if message.sender == request.user %}self{% endif %}">
+                                {% if message.is_deleted %}
+                                    <div class="msg-empty">This message was deleted</div>
+                                {% else %}
+                                    {% if message.content %}
+                                        <div class="chat-text">{{ message.content }}</div>
+                                    {% endif %}
+
+                                    {% if message.attachment %}
+                                        {% with file_url=message.attachment.url|lower %}
+                                            {% if file_url|slice:"-4:" == ".png" or file_url|slice:"-4:" == ".jpg" or file_url|slice:"-5:" == ".jpeg" or file_url|slice:"-4:" == ".gif" or file_url|slice:"-5:" == ".webp" %}
+                                                <div class="mt-2">
+                                                    <img src="{{ message.attachment.url }}"
+                                                         alt="Attachment"
+                                                         class="chat-image"
+                                                         onclick="window.open('{{ message.attachment.url }}', '_blank')">
+                                                </div>
+                                            {% else %}
+                                                <div class="mt-2">
+                                                    <a href="{{ message.attachment.url }}" target="_blank" class="btn btn-sm profile-action-btn">
+                                                        <i class="bi bi-paperclip me-1"></i>{{ message.attachment.name|cut:"team_message_attachments/" }}
+                                                    </a>
+                                                </div>
+                                            {% endif %}
+                                        {% endwith %}
+                                    {% endif %}
+                                {% endif %}
+
+                                <div class="chat-time"></div>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="tool-desc" id="no-messages-hint">No team messages yet. Start the conversation below.</div>
+                {% endfor %}
+            </div>
+
+            <div class="chat-input-bar">
+                <form method="post" action="{% url 'send_team_message' team_conversation.id %}" enctype="multipart/form-data" id="message-form">
+                    {% csrf_token %}
+                    <div class="ig-input-shell">
+                        {{ message_form.content }}
+
+                        <div class="ig-actions">
+                            <label for="id_attachment" class="icon-inline-btn" title="Attach file">
+                                <i class="bi bi-paperclip"></i>
+                            </label>
+                            {{ message_form.attachment }}
+                            <button type="submit" class="icon-inline-btn" title="Send message" id="send-btn">
+                                <i class="bi bi-send"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="selected-file-name" class="attachment-chip" style="display:none;"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (function () {
+        var attachmentInput = document.getElementById('id_attachment');
+        var fileNameChip = document.getElementById('selected-file-name');
+        var messageInput = document.getElementById('id_content');
+        var form = document.getElementById('message-form');
+        var messagesBox = document.getElementById('chat-messages');
+        var sendBtn = document.getElementById('send-btn');
+
+        function scrollToBottom() {
+            if (messagesBox) {
+                messagesBox.scrollTop = messagesBox.scrollHeight;
+            }
+        }
+
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function autoResizeTextarea() {
+            if (!messageInput) return;
+            messageInput.style.height = '24px';
+            messageInput.style.overflowY = 'hidden';
+
+            var nextHeight = Math.min(messageInput.scrollHeight, 120);
+            messageInput.style.height = nextHeight + 'px';
+
+            if (messageInput.scrollHeight > 120) {
+                messageInput.style.overflowY = 'auto';
+            }
+        }
+
+        function formatLocalTime(date) {
+            return date.toLocaleString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric',
+                hour: 'numeric', minute: '2-digit', hour12: true
+            });
+        }
+
+        function localMinuteKey(date) {
+            return date.getFullYear() + '-' +
+                String(date.getMonth() + 1).padStart(2, '0') + '-' +
+                String(date.getDate()).padStart(2, '0') + ' ' +
+                String(date.getHours()).padStart(2, '0') + ':' +
+                String(date.getMinutes()).padStart(2, '0');
+        }
+
+        if (messagesBox) {
+            messagesBox.querySelectorAll('.chat-time-separator[data-utc]').forEach(function(el) {
+                var d = new Date(el.dataset.utc);
+                el.querySelector('span').textContent = formatLocalTime(d);
+                el.setAttribute('data-time-minute', localMinuteKey(d));
+            });
+
+            messagesBox.querySelectorAll('.chat-bubble-wrap[data-utc]').forEach(function(el) {
+                var d = new Date(el.dataset.utc);
+                var timeEl = el.querySelector('.chat-time');
+                if (timeEl) {
+                    timeEl.textContent = formatLocalTime(d);
+                }
+            });
+        }
+
+        function maybeInsertTimeSeparator(date) {
+            if (!messagesBox) return;
+
+            var minuteKey = localMinuteKey(date);
+            var allSeparators = messagesBox.querySelectorAll('.chat-time-separator');
+            var lastSeparator = allSeparators.length ? allSeparators[allSeparators.length - 1] : null;
+            var lastMinute = lastSeparator ? lastSeparator.getAttribute('data-time-minute') : null;
+
+            if (lastMinute !== minuteKey) {
+                var separator = document.createElement('div');
+                separator.className = 'chat-time-separator';
+                separator.setAttribute('data-time-minute', minuteKey);
+                separator.innerHTML = '<span>' + escapeHtml(formatLocalTime(date)) + '</span>';
+                messagesBox.appendChild(separator);
+            }
+        }
+
+        function clearAttachment() {
+            attachmentInput.value = '';
+            fileNameChip.style.display = 'none';
+            fileNameChip.innerHTML = '';
+        }
+
+        function onAttachmentChange() {
+            if (attachmentInput.files.length > 0) {
+                fileNameChip.style.display = 'inline-flex';
+                fileNameChip.innerHTML =
+                    '<i class="bi bi-paperclip"></i>' +
+                    escapeHtml(attachmentInput.files[0].name) +
+                    '<button type="button" class="attachment-chip-remove" title="Remove attachment"><i class="bi bi-x"></i></button>';
+                fileNameChip.querySelector('.attachment-chip-remove').addEventListener('click', clearAttachment);
+            } else {
+                fileNameChip.style.display = 'none';
+                fileNameChip.innerHTML = '';
+            }
+        }
+
+        function appendMessage(message) {
+            if (!messagesBox) return;
+
+            var hint = document.getElementById('no-messages-hint');
+            if (hint) hint.remove();
+
+            var date = new Date(message.created_at_iso);
+            maybeInsertTimeSeparator(date);
+
+            var wrapper = document.createElement('div');
+            wrapper.className = 'chat-bubble-wrap' + (message.is_self ? ' self' : '');
+            wrapper.setAttribute('data-utc', message.created_at_iso);
+            if (message.id) wrapper.dataset.messageId = message.id;
+
+            var avatarHtml = '';
+            var senderHtml = '';
+
+            if (!message.is_self) {
+                avatarHtml = '<div class="chat-avatar">' + escapeHtml(message.sender_initials || '?') + '</div>';
+                senderHtml = '<div class="chat-sender">' + escapeHtml(message.sender_name || 'Unknown User') + '</div>';
+            }
+
+            var attachmentHtml = '';
+            if (message.attachment_url) {
+                var lowerUrl = message.attachment_url.toLowerCase();
+                var isImage =
+                    lowerUrl.endsWith('.png') ||
+                    lowerUrl.endsWith('.jpg') ||
+                    lowerUrl.endsWith('.jpeg') ||
+                    lowerUrl.endsWith('.gif') ||
+                    lowerUrl.endsWith('.webp');
+
+                if (isImage) {
+                    attachmentHtml =
+                        '<div class="mt-2">' +
+                            '<img src="' + message.attachment_url + '" alt="Attachment" class="chat-image" onclick="window.open(\'' + message.attachment_url + '\', \'_blank\')">' +
+                        '</div>';
+                } else {
+                    attachmentHtml =
+                        '<div class="mt-2">' +
+                            '<a href="' + message.attachment_url + '" target="_blank" class="btn btn-sm profile-action-btn">' +
+                                '<i class="bi bi-paperclip me-1"></i>' + escapeHtml(message.attachment_name) +
+                            '</a>' +
+                        '</div>';
+                }
+            }
+
+            wrapper.innerHTML =
+                avatarHtml +
+                '<div class="chat-message-stack' + (message.is_self ? ' self' : '') + '">' +
+                    senderHtml +
+                    '<div class="chat-bubble' + (message.is_self ? ' self' : '') + '">' +
+                        (message.content ? '<div class="chat-text">' + escapeHtml(message.content) + '</div>' : '') +
+                        attachmentHtml +
+                        '<div class="chat-time">' + escapeHtml(formatLocalTime(date)) + '</div>' +
+                    '</div>' +
+                '</div>';
+
+            messagesBox.appendChild(wrapper);
+            scrollToBottom();
+        }
+
+        if (attachmentInput) {
+            attachmentInput.classList.add('hidden-file-input');
+            attachmentInput.addEventListener('change', onAttachmentChange);
+        }
+
+        if (messageInput) {
+            messageInput.classList.add('ig-message-input');
+            messageInput.rows = 1;
+            autoResizeTextarea();
+
+            messageInput.addEventListener('input', autoResizeTextarea);
+
+            messageInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    form.requestSubmit();
+                }
+            });
+        }
+
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                var text = messageInput ? messageInput.value.trim() : '';
+                var hasFile = attachmentInput && attachmentInput.files.length > 0;
+
+                if (!text && !hasFile) {
+                    return;
+                }
+
+                var formData = new FormData(form);
+                form.classList.add('send-loading');
+                if (sendBtn) sendBtn.disabled = true;
+
+                fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                })
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (data) {
+                    if (data.ok) {
+                        appendMessage(data.message);
+                        form.reset();
+                        if (fileNameChip) {
+                            fileNameChip.style.display = 'none';
+                            fileNameChip.innerHTML = '';
+                        }
+                        if (messageInput) {
+                            messageInput.value = '';
+                            autoResizeTextarea();
+                            messageInput.focus();
+                        }
+                    } else {
+                        alert('Could not send message.');
+                    }
+                })
+                .catch(function () {
+                    alert('Could not send message.');
+                })
+                .finally(function () {
+                    form.classList.remove('send-loading');
+                    if (sendBtn) sendBtn.disabled = false;
+                });
+            });
+        }
+
+        scrollToBottom();
+    })();
+</script>
+{% endblock %}

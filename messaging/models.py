@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from users.models import Team
 
 
 class Conversation(models.Model):
@@ -69,4 +70,37 @@ class ConversationRead(models.Model):
 
     class Meta:
         unique_together = [('user', 'conversation')]
-    
+
+class TeamConversation(models.Model):
+    team = models.OneToOneField(
+        Team,
+        on_delete=models.CASCADE,
+        related_name='team_conversation'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Team chat: {self.team.name}"
+
+
+class TeamMessage(models.Model):
+    team_conversation = models.ForeignKey(
+        TeamConversation,
+        on_delete=models.CASCADE,
+        related_name='messages'
+    )
+    sender = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    content = models.TextField(blank=True)
+    attachment = models.FileField(
+        upload_to='team_message_attachments/',
+        blank=True,
+        null=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
+
+    def __str__(self):
+        sender = self.sender.username if self.sender else 'Deleted User'
+        return f"Team message from {sender} at {self.created_at}"
