@@ -1162,8 +1162,73 @@
             });
         }
 
+        window._appendMessage = appendMessage;
         scrollToBottom();
 
+    })();
+</script>
+<script>
+    (function () {
+        var wsUrl = (location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/chat/';
+        var ws;
+
+        function connect() {
+            ws = new WebSocket(wsUrl);
+
+            ws.onmessage = function (e) {
+                var data = JSON.parse(e.data);
+                if (data.type !== 'new_message') return;
+                var msg = data.message;
+
+                // Update unread badge on sidebar conversation item
+                var item = document.querySelector('[data-conversation-id="' + msg.conversation_id + '"]');
+                if (item) {
+                    var badge = item.querySelector('.unread-badge');
+                    if (badge) {
+                        badge.style.display = '';
+                    }
+                    // Move to top of list
+                    var list = document.getElementById('conversation-list');
+                    if (list) list.prepend(item);
+                    var preview = item.querySelector('.conversation-preview');
+                    if (preview) {
+                        var truncated = msg.content && msg.content.length > 20 ? msg.content.slice(0, 20) + '...' : (msg.content || 'Attachment');
+                        preview.textContent = truncated;
+                        preview.dataset.lastMessageId = msg.id;
+                    }
+                }
+
+                // Only append to chat if this conversation is currently active
+                if (!ACTIVE_CONVERSATION_ID || String(msg.conversation_id) !== String(ACTIVE_CONVERSATION_ID)) return;
+
+                var appendMessage = window._appendMessage;
+                if (appendMessage) {
+                    appendMessage({
+                        id: msg.id,
+                        content: msg.content,
+                        attachment_url: msg.attachment_url,
+                        attachment_name: msg.attachment_name,
+                        created_at_iso: msg.created_at_iso,
+                        is_self: false,
+                    });
+                }
+
+                // Mark as read since the chat is open
+                fetch('/messages/mark-read/' + msg.conversation_id + '/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    }
+                });
+            };
+
+            ws.onclose = function () {
+                setTimeout(connect, 3000);
+            };
+        }
+
+        connect();
     })();
 </script>
 {% endblock %}

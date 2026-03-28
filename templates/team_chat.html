@@ -626,4 +626,100 @@
         scrollToBottom();
     })();
 </script>
+<script>
+    (function () {
+        var TEAM_ID = {{ team.id }};
+        var wsUrl = (location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/team/' + TEAM_ID + '/';
+        var ws;
+        var CURRENT_USER_ID = {{ request.user.id }};
+
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatLocalTime(date) {
+            return date.toLocaleString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric',
+                hour: 'numeric', minute: '2-digit', hour12: true
+            });
+        }
+
+        function localMinuteKey(date) {
+            return date.getFullYear() + '-' +
+                String(date.getMonth() + 1).padStart(2, '0') + '-' +
+                String(date.getDate()).padStart(2, '0') + ' ' +
+                String(date.getHours()).padStart(2, '0') + ':' +
+                String(date.getMinutes()).padStart(2, '0');
+        }
+
+        function connect() {
+            ws = new WebSocket(wsUrl);
+
+            ws.onmessage = function (e) {
+                var data = JSON.parse(e.data);
+                if (data.type !== 'new_team_message') return;
+                var msg = data.message;
+
+                // Don't duplicate — the sender already sees it via the fetch response
+                if (String(msg.sender_id) === String(CURRENT_USER_ID)) return;
+
+                var messagesBox = document.getElementById('chat-messages');
+                if (!messagesBox) return;
+
+                var hint = document.getElementById('no-messages-hint');
+                if (hint) hint.remove();
+
+                var date = new Date(msg.created_at_iso);
+                var minuteKey = localMinuteKey(date);
+                var allSeps = messagesBox.querySelectorAll('.chat-time-separator');
+                var lastSep = allSeps.length ? allSeps[allSeps.length - 1] : null;
+                if (!lastSep || lastSep.getAttribute('data-time-minute') !== minuteKey) {
+                    var sep = document.createElement('div');
+                    sep.className = 'chat-time-separator';
+                    sep.setAttribute('data-time-minute', minuteKey);
+                    sep.innerHTML = '<span>' + escapeHtml(formatLocalTime(date)) + '</span>';
+                    messagesBox.appendChild(sep);
+                }
+
+                var attachmentHtml = '';
+                if (msg.attachment_url) {
+                    var lowerUrl = msg.attachment_url.toLowerCase();
+                    var isImage = lowerUrl.endsWith('.png') || lowerUrl.endsWith('.jpg') ||
+                                  lowerUrl.endsWith('.jpeg') || lowerUrl.endsWith('.gif') || lowerUrl.endsWith('.webp');
+                    if (isImage) {
+                        attachmentHtml = '<div class="mt-2"><img src="' + msg.attachment_url + '" alt="Attachment" class="chat-image" onclick="window.open(\'' + msg.attachment_url + '\', \'_blank\')"></div>';
+                    } else {
+                        attachmentHtml = '<div class="mt-2"><a href="' + msg.attachment_url + '" target="_blank" class="btn btn-sm profile-action-btn"><i class="bi bi-paperclip me-1"></i>' + escapeHtml(msg.attachment_name) + '</a></div>';
+                    }
+                }
+
+                var wrapper = document.createElement('div');
+                wrapper.className = 'chat-bubble-wrap';
+                wrapper.setAttribute('data-utc', msg.created_at_iso);
+                wrapper.setAttribute('data-message-id', msg.id);
+                wrapper.innerHTML =
+                    '<div class="chat-avatar">' + escapeHtml(msg.sender_initials || '?') + '</div>' +
+                    '<div class="chat-message-stack">' +
+                        '<div class="chat-sender">' + escapeHtml(msg.sender_name || 'Unknown User') + '</div>' +
+                        '<div class="chat-bubble">' +
+                            (msg.content ? '<div class="chat-text">' + escapeHtml(msg.content) + '</div>' : '') +
+                            attachmentHtml +
+                            '<div class="chat-time">' + escapeHtml(formatLocalTime(date)) + '</div>' +
+                        '</div>' +
+                    '</div>';
+
+                messagesBox.appendChild(wrapper);
+                messagesBox.scrollTop = messagesBox.scrollHeight;
+            };
+
+            ws.onclose = function () {
+                setTimeout(connect, 3000);
+            };
+        }
+
+        connect();
+    })();
+</script>
 {% endblock %}

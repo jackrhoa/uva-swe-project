@@ -1,5 +1,7 @@
 import json
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -159,6 +161,30 @@ def send_message(request, conversation_id):
             message.save()
             conversation.save()
 
+            recipient = (
+                conversation.user2
+                if conversation.user1 == request.user
+                else conversation.user1
+            )
+            if recipient:
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    f"user_{recipient.id}",
+                    {
+                        "type": "chat.message",
+                        "message": {
+                            "id": message.id,
+                            "content": message.content,
+                            "attachment_url": message.attachment.url if message.attachment else '',
+                            "attachment_name": message.attachment.name.split('/')[-1] if message.attachment else '',
+                            "created_at_iso": message.created_at.isoformat(),
+                            "conversation_id": conversation.id,
+                            "sender_id": request.user.id,
+                            "sender_name": _display_name(request.user),
+                        },
+                    }
+                )
+
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     'ok': True,
@@ -260,6 +286,24 @@ def send_team_message(request, team_conversation_id):
             message.sender = request.user
             message.save()
             team_conversation.save()
+
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f"team_{team_conversation.team_id}",
+                {
+                    "type": "team.message",
+                    "message": {
+                        "id": message.id,
+                        "content": message.content,
+                        "attachment_url": message.attachment.url if message.attachment else '',
+                        "attachment_name": message.attachment.name.split('/')[-1] if message.attachment else '',
+                        "created_at_iso": message.created_at.isoformat(),
+                        "sender_id": request.user.id,
+                        "sender_name": _display_name(request.user),
+                        "sender_initials": _avatar_letters(request.user),
+                    },
+                }
+            )
 
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({

@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'storages',
     'users',
     'messaging',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -62,6 +63,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
@@ -116,4 +118,10 @@ SOCIALACCOUNT_PROVIDERS = {
             'key': '',
         },
     }
+}
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
 }

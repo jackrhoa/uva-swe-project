@@ -1,2 +1,2 @@
 release: python manage.py migrate
-web: gunicorn config.wsgi --worker-class gevent --workers 3 --timeout 0
+web: uvicorn config.asgi:application --host 0.0.0.0 --port $PORT --workers 1
