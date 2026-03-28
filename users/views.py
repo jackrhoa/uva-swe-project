@@ -1,11 +1,12 @@
-from django.db import IntegrityError
+from django.db import IntegrityError, models
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from .models import Team, UserProfile
+from .models import Team, UserProfile, Task
 from .forms import ProfileNameForm
+import json
 
 
 @login_required
@@ -131,3 +132,107 @@ def delete_account(request):
         user.delete()
         return redirect('account_login')
     return redirect('profile')
+
+@login_required
+def tasks(request):
+    from django.contrib.auth.models import User
+    from django.db.models import Q
+    team = request.user.profile.team
+
+    all_tasks = Task.objects.filter(team=team)
+
+    # Visibility: show if whole_team=True OR user is in active_users OR user is exec
+    if request.user.profile.is_exec():
+        visible = all_tasks
+    else:
+        visible = all_tasks.filter(
+            Q(whole_team=True) | Q(active_users=request.user)
+        ).distinct()
+
+    uncompleted_tasks = visible.filter(actions_completed__lt=models.F('total_actions')).order_by('-priority', 'name')
+    completed_tasks   = visible.filter(actions_completed__gte=models.F('total_actions')).order_by('-priority', 'name')
+    team_members      = User.objects.filter(profile__team=team)
+
+    return render(request, 'tasks.html', {
+        'uncompleted_tasks': uncompleted_tasks,
+        'completed_tasks':   completed_tasks,
+        'is_exec':           request.user.profile.is_exec(),
+        'team_members':      team_members,
+        'team_name':         team.name,   # ← for the dropdown label
+    })
+
+
+# Exec-only: Add a blank task
+@login_required
+def add_task(request):
+    if not request.user.profile.is_exec():
+        return redirect('tasks')
+
+    Task.objects.create(
+        name="New Task",
+        description="",
+        team=request.user.profile.team,
+        total_actions=1,
+        actions_completed=0,
+        priority=100
+    )
+    return redirect('tasks')
+
+
+# Exec-only: Remove task
+@login_required
+def remove_task(request, task_id):
+    if not request.user.profile.is_exec():
+        return redirect('tasks')
+
+    task = get_object_or_404(Task, id=task_id, team=request.user.profile.team)
+    task.delete()
+    return redirect('tasks')
+
+
+@login_required
+def edit_task(request, task_id):
+    task = get_object_or_404(Task, id=task_id, team=request.user.profile.team)
+
+    if request.method == 'POST':
+        data = json.loads(request.body)
+
+        if request.user.profile.is_exec():
+            task.name        = data.get('name', task.name)
+            task.description = data.get('description', task.description)
+            task.total_actions = int(data.get('total_actions', task.total_actions))
+            task.priority    = int(data.get('priority', task.priority))
+
+            whole_team = data.get('whole_team', False)
+            task.whole_team = whole_team
+
+            if whole_team:
+                task.active_users.clear()
+            elif 'active_users' in data:
+                from django.contrib.auth.models import User
+                ids = [int(i) for i in data['active_users'] if i]
+                task.active_users.set(User.objects.filter(id__in=ids, profile__team=task.team))
+
+        if 'actions_completed' in data:
+            task.actions_completed = max(0, min(int(data['actions_completed']), task.total_actions))
+
+        task.save()
+
+        return JsonResponse({
+            'name':              task.name,
+            'description':       task.description,
+            'priority':          task.priority,
+            'actions_completed': task.actions_completed,
+            'total_actions':     task.total_actions,
+            'whole_team':        task.whole_team,
+            'active_users': [
+                {
+                    'id':      u.id,
+                    'name':    u.get_full_name() or u.username,
+                    'initial': (u.first_name[:1] or u.username[:1]).upper(),
+                }
+                for u in task.active_users.all()
+            ],
+        })
+
+    return JsonResponse({'error': 'Invalid method'}, status=400)

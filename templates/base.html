@@ -1026,6 +1026,11 @@
                             </a>
                         </li>
                         {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link {% block nav_tasks %}{% endblock %}" href="{% url 'tasks' %}">
+                                <i class="bi bi-list-task"></i>Tasks
+                            </a>
+                        </li>
                     </ul>
                     <div class="d-flex align-items-center gap-3">
                         <button id="theme-toggle" class="btn-theme-toggle" aria-label="Toggle theme">
