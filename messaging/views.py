@@ -220,6 +220,24 @@ def delete_message(request, message_id):
         message.content = ''
         message.attachment = None
         message.save()
+
+        conversation = message.conversation
+        recipient = (
+            conversation.user2
+            if conversation.user1 == request.user
+            else conversation.user1
+        )
+        if recipient:
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f"user_{recipient.id}",
+                {
+                    "type": "message.deleted",
+                    "message_id": message.id,
+                    "conversation_id": conversation_id,
+                }
+            )
+
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'ok': True})
         return redirect(f'/messages/?conversation={conversation_id}')

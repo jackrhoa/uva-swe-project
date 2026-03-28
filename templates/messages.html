@@ -1163,6 +1163,7 @@
         }
 
         window._appendMessage = appendMessage;
+        window._updatePreviewForDeletion = updatePreviewForDeletion;
         scrollToBottom();
 
     })();
@@ -1177,6 +1178,17 @@
 
             ws.onmessage = function (e) {
                 var data = JSON.parse(e.data);
+
+                if (data.type === 'message_deleted') {
+                    var wrap = document.querySelector('.chat-bubble-wrap[data-message-id="' + data.message_id + '"]');
+                    if (wrap) {
+                        wrap.innerHTML = '<span class="msg-deleted-placeholder">This message was deleted</span>';
+                        wrap.removeAttribute('data-message-id');
+                    }
+                    if (window._updatePreviewForDeletion) window._updatePreviewForDeletion(data.message_id);
+                    return;
+                }
+
                 if (data.type !== 'new_message') return;
                 var msg = data.message;
 
