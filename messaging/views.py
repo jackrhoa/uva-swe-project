@@ -289,6 +289,33 @@ def team_chat(request):
 
 
 @login_required
+def delete_team_message(request, message_id):
+    message = get_object_or_404(TeamMessage, id=message_id, sender=request.user)
+
+    if request.method == 'POST':
+        team_conversation = message.team_conversation
+        message.is_deleted = True
+        message.content = ''
+        message.attachment = None
+        message.save()
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"team_{team_conversation.team_id}",
+            {
+                "type": "team.message.deleted",
+                "message_id": message.id,
+            }
+        )
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'ok': True})
+        return redirect('team_chat')
+
+    return JsonResponse({'ok': False}, status=405)
+
+
+@login_required
 def send_team_message(request, team_conversation_id):
     profile = request.user.profile
 

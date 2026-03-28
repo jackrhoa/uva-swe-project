@@ -9,4 +9,5 @@ urlpatterns = [
     path('mark-read/<int:conversation_id>/', views.mark_read, name='mark_read'),
     path('team/', views.team_chat, name='team_chat'),
     path('team/send/<int:team_conversation_id>/', views.send_team_message, name='send_team_message'),
+    path('team/delete/<int:message_id>/', views.delete_team_message, name='delete_team_message'),
 ]

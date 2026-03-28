@@ -50,3 +50,9 @@ class TeamChatConsumer(AsyncWebsocketConsumer):
             "type": "new_team_message",
             "message": event["message"],
         }))
+
+    async def team_message_deleted(self, event):
+        await self.send(text_data=json.dumps({
+            "type": "team_message_deleted",
+            "message_id": event["message_id"],
+        }))

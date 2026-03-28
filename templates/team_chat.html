@@ -273,10 +273,110 @@
         pointer-events: none;
     }
 
-    .msg-empty {
+    .msg-deleted-placeholder {
         color: var(--text-muted);
-        font-size: 0.95rem;
+        font-size: 0.9rem;
+        font-style: italic;
     }
+
+    .msg-menu-wrap {
+        position: relative;
+        align-self: flex-end;
+        margin-bottom: 0.2rem;
+    }
+
+    .msg-menu-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 1.1rem;
+        line-height: 1;
+        padding: 0.2rem 0.3rem;
+        border-radius: 6px;
+        line-height: 1;
+        transition: color 0.15s, background 0.15s;
+    }
+
+    .msg-menu-btn:hover { color: var(--text-primary); }
+
+    .msg-menu-dropdown {
+        display: none;
+        position: absolute;
+        bottom: calc(100% + 4px);
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--bg-card-solid);
+        border: 1px solid var(--border-hover);
+        border-radius: 8px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+        z-index: 100;
+        overflow: hidden;
+    }
+
+    .msg-menu-dropdown.flip-down {
+        bottom: auto;
+        top: calc(100% + 4px);
+    }
+
+    .msg-menu-wrap.open .msg-menu-dropdown { display: block; }
+
+    .msg-menu-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.45rem 0.6rem;
+        font-size: 0.95rem;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-muted);
+        transition: color 0.15s, background 0.15s;
+    }
+
+    .msg-menu-item:hover {
+        color: var(--danger);
+        background: rgba(248,113,113,0.1);
+    }
+
+    .delete-confirm-popup {
+        position: fixed;
+        background: var(--bg-card-solid);
+        border: 1px solid var(--border-hover);
+        border-radius: 10px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        padding: 0.6rem 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        white-space: nowrap;
+        z-index: 100;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    .delete-confirm-popup button {
+        border: none;
+        border-radius: 6px;
+        padding: 0.2rem 0.55rem;
+        font-size: 0.82rem;
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+    .delete-confirm-yes {
+        background: rgba(248,113,113,0.15);
+        color: var(--danger);
+    }
+
+    .delete-confirm-yes:hover { background: rgba(248,113,113,0.28); }
+
+    .delete-confirm-no {
+        background: rgba(255,255,255,0.06);
+        color: var(--text-secondary);
+    }
+
+    .delete-confirm-no:hover { background: rgba(255,255,255,0.12); }
 </style>
 {% endblock %}
 
@@ -324,22 +424,18 @@
                                 </div>
                             {% endif %}
 
-                            <div class="chat-bubble {% if message.sender == request.user %}self{% endif %}">
-                                {% if message.is_deleted %}
-                                    <div class="msg-empty">This message was deleted</div>
-                                {% else %}
+                            {% if message.is_deleted %}
+                                <span class="msg-deleted-placeholder">This message was deleted</span>
+                            {% else %}
+                                <div class="chat-bubble {% if message.sender == request.user %}self{% endif %}">
                                     {% if message.content %}
                                         <div class="chat-text">{{ message.content }}</div>
                                     {% endif %}
-
                                     {% if message.attachment %}
                                         {% with file_url=message.attachment.url|lower %}
                                             {% if file_url|slice:"-4:" == ".png" or file_url|slice:"-4:" == ".jpg" or file_url|slice:"-5:" == ".jpeg" or file_url|slice:"-4:" == ".gif" or file_url|slice:"-5:" == ".webp" %}
                                                 <div class="mt-2">
-                                                    <img src="{{ message.attachment.url }}"
-                                                         alt="Attachment"
-                                                         class="chat-image"
-                                                         onclick="window.open('{{ message.attachment.url }}', '_blank')">
+                                                    <img src="{{ message.attachment.url }}" alt="Attachment" class="chat-image" onclick="window.open('{{ message.attachment.url }}', '_blank')">
                                                 </div>
                                             {% else %}
                                                 <div class="mt-2">
@@ -350,10 +446,18 @@
                                             {% endif %}
                                         {% endwith %}
                                     {% endif %}
+                                </div>
+                                {% if message.sender == request.user %}
+                                    <div class="msg-menu-wrap">
+                                        <button class="msg-menu-btn" data-message-id="{{ message.id }}" title="Message options">&#8942;</button>
+                                        <div class="msg-menu-dropdown">
+                                            <button class="msg-menu-item" data-message-id="{{ message.id }}" title="Delete message">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
                                 {% endif %}
-
-                                <div class="chat-time"></div>
-                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 {% empty %}
@@ -442,14 +546,6 @@
                 el.querySelector('span').textContent = formatLocalTime(d);
                 el.setAttribute('data-time-minute', localMinuteKey(d));
             });
-
-            messagesBox.querySelectorAll('.chat-bubble-wrap[data-utc]').forEach(function(el) {
-                var d = new Date(el.dataset.utc);
-                var timeEl = el.querySelector('.chat-time');
-                if (timeEl) {
-                    timeEl.textContent = formatLocalTime(d);
-                }
-            });
         }
 
         function maybeInsertTimeSeparator(date) {
@@ -536,6 +632,19 @@
                 }
             }
 
+            var deleteMenuHtml = '';
+            if (message.is_self && message.id) {
+                deleteMenuHtml =
+                    '<div class="msg-menu-wrap">' +
+                        '<button class="msg-menu-btn" data-message-id="' + message.id + '" title="Message options">&#8942;</button>' +
+                        '<div class="msg-menu-dropdown">' +
+                            '<button class="msg-menu-item" data-message-id="' + message.id + '" title="Delete message">' +
+                                '<i class="bi bi-trash"></i>' +
+                            '</button>' +
+                        '</div>' +
+                    '</div>';
+            }
+
             wrapper.innerHTML =
                 avatarHtml +
                 '<div class="chat-message-stack' + (message.is_self ? ' self' : '') + '">' +
@@ -543,9 +652,9 @@
                     '<div class="chat-bubble' + (message.is_self ? ' self' : '') + '">' +
                         (message.content ? '<div class="chat-text">' + escapeHtml(message.content) + '</div>' : '') +
                         attachmentHtml +
-                        '<div class="chat-time">' + escapeHtml(formatLocalTime(date)) + '</div>' +
                     '</div>' +
-                '</div>';
+                '</div>' +
+                deleteMenuHtml;
 
             messagesBox.appendChild(wrapper);
             scrollToBottom();
@@ -623,6 +732,96 @@
             });
         }
 
+        // Delete menu toggle
+        document.addEventListener('click', function(e) {
+            var btn = e.target.closest('.msg-menu-btn');
+            if (btn) {
+                e.stopPropagation();
+                var wrap = btn.closest('.msg-menu-wrap');
+                var isOpen = wrap.classList.contains('open');
+                document.querySelectorAll('.msg-menu-wrap.open').forEach(function(w) { w.classList.remove('open'); });
+                if (!isOpen) {
+                    wrap.classList.add('open');
+                    var dropdown = wrap.querySelector('.msg-menu-dropdown');
+                    var rect = btn.getBoundingClientRect();
+                    var dropdownHeight = dropdown.offsetHeight || 40;
+                    var container = document.getElementById('chat-messages');
+                    var containerTop = container ? container.getBoundingClientRect().top : 0;
+                    dropdown.classList.toggle('flip-down', rect.top - dropdownHeight < containerTop);
+                }
+                return;
+            }
+            if (!e.target.closest('.msg-menu-wrap')) {
+                document.querySelectorAll('.msg-menu-wrap.open').forEach(function(w) { w.classList.remove('open'); });
+            }
+        });
+
+        // Delete confirm popup
+        var confirmPopup = document.createElement('div');
+        confirmPopup.className = 'delete-confirm-popup';
+        confirmPopup.style.display = 'none';
+        confirmPopup.innerHTML =
+            'Delete this message?' +
+            '<button class="delete-confirm-yes">Delete</button>' +
+            '<button class="delete-confirm-no">Cancel</button>';
+        document.body.appendChild(confirmPopup);
+
+        function closeConfirm() {
+            confirmPopup.style.display = 'none';
+            confirmPopup.dataset.messageId = '';
+        }
+
+        confirmPopup.querySelector('.delete-confirm-yes').addEventListener('click', function() {
+            var messageId = confirmPopup.dataset.messageId;
+            if (!messageId) return;
+            closeConfirm();
+            fetch('/messages/team/delete/' + messageId + '/', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.ok) {
+                    var wrap = document.querySelector('.chat-bubble-wrap[data-message-id="' + messageId + '"]');
+                    if (wrap) {
+                        wrap.innerHTML = '<span class="msg-deleted-placeholder">This message was deleted</span>';
+                        wrap.removeAttribute('data-message-id');
+                    }
+                }
+            });
+        });
+
+        confirmPopup.querySelector('.delete-confirm-no').addEventListener('click', closeConfirm);
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.delete-confirm-popup') && !e.target.closest('.msg-menu-item')) {
+                closeConfirm();
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            var item = e.target.closest('.msg-menu-item');
+            if (!item) return;
+            var messageId = item.dataset.messageId;
+            if (!messageId) return;
+            var menuWrap = item.closest('.msg-menu-wrap');
+            menuWrap.classList.remove('open');
+            var anchor = menuWrap.querySelector('.msg-menu-btn');
+            confirmPopup.dataset.messageId = messageId;
+            confirmPopup.style.display = 'flex';
+            var r = anchor.getBoundingClientRect();
+            var pw = confirmPopup.offsetWidth;
+            var ph = confirmPopup.offsetHeight;
+            var top = r.top - ph - 6;
+            if (top < 4) top = r.bottom + 6;
+            var left = r.left + r.width / 2 - pw / 2;
+            confirmPopup.style.top  = Math.max(4, top) + 'px';
+            confirmPopup.style.left = Math.max(4, Math.min(left, window.innerWidth - pw - 4)) + 'px';
+        });
+
         scrollToBottom();
     })();
 </script>
@@ -659,10 +858,19 @@
 
             ws.onmessage = function (e) {
                 var data = JSON.parse(e.data);
+
+                if (data.type === 'team_message_deleted') {
+                    var wrap = document.querySelector('.chat-bubble-wrap[data-message-id="' + data.message_id + '"]');
+                    if (wrap) {
+                        wrap.innerHTML = '<span class="msg-deleted-placeholder">This message was deleted</span>';
+                        wrap.removeAttribute('data-message-id');
+                    }
+                    return;
+                }
+
                 if (data.type !== 'new_team_message') return;
                 var msg = data.message;
 
-                // Don't duplicate — the sender already sees it via the fetch response
                 if (String(msg.sender_id) === String(CURRENT_USER_ID)) return;
 
                 var messagesBox = document.getElementById('chat-messages');
@@ -697,7 +905,6 @@
 
                 var wrapper = document.createElement('div');
                 wrapper.className = 'chat-bubble-wrap';
-                wrapper.setAttribute('data-utc', msg.created_at_iso);
                 wrapper.setAttribute('data-message-id', msg.id);
                 wrapper.innerHTML =
                     '<div class="chat-avatar">' + escapeHtml(msg.sender_initials || '?') + '</div>' +
@@ -706,7 +913,6 @@
                         '<div class="chat-bubble">' +
                             (msg.content ? '<div class="chat-text">' + escapeHtml(msg.content) + '</div>' : '') +
                             attachmentHtml +
-                            '<div class="chat-time">' + escapeHtml(formatLocalTime(date)) + '</div>' +
                         '</div>' +
                     '</div>';
 
