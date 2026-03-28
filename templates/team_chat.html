@@ -281,8 +281,7 @@
 
     .msg-menu-wrap {
         position: relative;
-        align-self: flex-end;
-        margin-bottom: 0.2rem;
+        align-self: center;
     }
 
     .msg-menu-btn {
@@ -413,14 +412,21 @@
                             </div>
                         {% endif %}
 
+                        {% if message.sender == request.user and not message.is_deleted %}
+                            <div class="msg-menu-wrap">
+                                <button class="msg-menu-btn" data-message-id="{{ message.id }}" title="Message options">&#8942;</button>
+                                <div class="msg-menu-dropdown">
+                                    <button class="msg-menu-item" data-message-id="{{ message.id }}" title="Delete message">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        {% endif %}
+
                         <div class="chat-message-stack {% if message.sender == request.user %}self{% endif %}">
                             {% if not message.sender == request.user %}
                                 <div class="chat-sender">
-                                    {% if message.sender %}
-                                        {{ message.sender.first_name }} {{ message.sender.last_name }}
-                                    {% else %}
-                                        Deleted User
-                                    {% endif %}
+                                    {% if message.sender %}{{ message.sender.first_name }} {{ message.sender.last_name }}{% else %}Deleted User{% endif %}
                                 </div>
                             {% endif %}
 
@@ -447,16 +453,6 @@
                                         {% endwith %}
                                     {% endif %}
                                 </div>
-                                {% if message.sender == request.user %}
-                                    <div class="msg-menu-wrap">
-                                        <button class="msg-menu-btn" data-message-id="{{ message.id }}" title="Message options">&#8942;</button>
-                                        <div class="msg-menu-dropdown">
-                                            <button class="msg-menu-item" data-message-id="{{ message.id }}" title="Delete message">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                {% endif %}
                             {% endif %}
                         </div>
                     </div>
@@ -647,17 +643,20 @@
 
             wrapper.innerHTML =
                 avatarHtml +
+                deleteMenuHtml +
                 '<div class="chat-message-stack' + (message.is_self ? ' self' : '') + '">' +
                     senderHtml +
                     '<div class="chat-bubble' + (message.is_self ? ' self' : '') + '">' +
                         (message.content ? '<div class="chat-text">' + escapeHtml(message.content) + '</div>' : '') +
                         attachmentHtml +
                     '</div>' +
-                '</div>' +
-                deleteMenuHtml;
+                '</div>';
 
             messagesBox.appendChild(wrapper);
             scrollToBottom();
+            wrapper.querySelectorAll('img').forEach(function(img) {
+                if (!img.complete) img.addEventListener('load', scrollToBottom);
+            });
         }
 
         if (attachmentInput) {
@@ -918,6 +917,11 @@
 
                 messagesBox.appendChild(wrapper);
                 messagesBox.scrollTop = messagesBox.scrollHeight;
+                wrapper.querySelectorAll('img').forEach(function(img) {
+                    if (!img.complete) img.addEventListener('load', function() {
+                        messagesBox.scrollTop = messagesBox.scrollHeight;
+                    });
+                });
             };
 
             ws.onclose = function () {

@@ -943,6 +943,9 @@
 
             messagesBox.appendChild(wrapper);
             scrollToBottom();
+            wrapper.querySelectorAll('img').forEach(function(img) {
+                if (!img.complete) img.addEventListener('load', scrollToBottom);
+            });
         }
 
         function updateConversationPreview(message) {
