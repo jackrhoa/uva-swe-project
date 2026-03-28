@@ -1173,6 +1173,12 @@
         var wsUrl = (location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/chat/';
         var ws;
 
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         function connect() {
             ws = new WebSocket(wsUrl);
 
@@ -1192,15 +1198,29 @@
                 if (data.type !== 'new_message') return;
                 var msg = data.message;
 
-                // Update unread badge on sidebar conversation item
+                // Update or create sidebar conversation item
+                var list = document.getElementById('conversation-list');
                 var item = document.querySelector('[data-conversation-id="' + msg.conversation_id + '"]');
-                if (item) {
-                    var badge = item.querySelector('.unread-badge');
-                    if (badge) {
-                        badge.style.display = '';
-                    }
-                    // Move to top of list
-                    var list = document.getElementById('conversation-list');
+                if (!item && list) {
+                    // New conversation — build the sidebar entry from scratch
+                    var noConvHint = list.querySelector('.tool-desc:not(.conversation-preview)');
+                    if (noConvHint) noConvHint.remove();
+
+                    item = document.createElement('a');
+                    item.href = '/messages/?conversation=' + msg.conversation_id;
+                    item.className = 'tool-item has-unread';
+                    item.setAttribute('data-conversation-id', msg.conversation_id);
+
+                    var truncated = msg.content && msg.content.length > 20 ? msg.content.slice(0, 20) + '...' : (msg.content || 'Attachment');
+                    item.innerHTML =
+                        '<div class="avatar-initials">' + escapeHtml(msg.sender_initials || '?') + '</div>' +
+                        '<div style="flex:1;min-width:0;">' +
+                            '<div class="tool-label">' + escapeHtml(msg.sender_name || msg.sender_email || 'Unknown') + '</div>' +
+                            '<div class="tool-desc conversation-preview" data-last-message-id="' + msg.id + '">' + escapeHtml(truncated) + '</div>' +
+                        '</div>';
+                    list.prepend(item);
+                } else if (item) {
+                    item.classList.add('has-unread');
                     if (list) list.prepend(item);
                     var preview = item.querySelector('.conversation-preview');
                     if (preview) {

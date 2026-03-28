@@ -181,6 +181,8 @@ def send_message(request, conversation_id):
                             "conversation_id": conversation.id,
                             "sender_id": request.user.id,
                             "sender_name": _display_name(request.user),
+                            "sender_initials": _avatar_letters(request.user),
+                            "sender_email": request.user.email,
                         },
                     }
                 )
