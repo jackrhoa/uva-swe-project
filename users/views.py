@@ -1,3 +1,4 @@
+from django.utils import timezone
 from django.db import IntegrityError, models
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
@@ -135,30 +136,47 @@ def delete_account(request):
 
 @login_required
 def tasks(request):
-    from django.contrib.auth.models import User
-    from django.db.models import Q
     team = request.user.profile.team
-
+    from django.db.models import Q, Case, When, Value, IntegerField
+ 
     all_tasks = Task.objects.filter(team=team)
-
-    # Visibility: show if whole_team=True OR user is in active_users OR user is exec
+ 
+    # Visibility: exec sees all; members see whole_team tasks or tasks assigned to them
     if request.user.profile.is_exec():
         visible = all_tasks
     else:
         visible = all_tasks.filter(
             Q(whole_team=True) | Q(active_users=request.user)
         ).distinct()
-
-    uncompleted_tasks = visible.filter(actions_completed__lt=models.F('total_actions')).order_by('-priority', 'name')
-    completed_tasks   = visible.filter(actions_completed__gte=models.F('total_actions')).order_by('-priority', 'name')
-    team_members      = User.objects.filter(profile__team=team)
-
+ 
+    # Undetermined (priority=0) always first, then highest priority, then name
+    priority_order = Case(
+        When(priority=0, then=Value(0)),
+        default=Value(1),
+        output_field=IntegerField()
+    )
+ 
+    uncompleted_tasks = (
+        visible
+        .filter(actions_completed__lt=models.F('total_actions'))
+        .order_by(priority_order, '-priority', 'name')
+    )
+    completed_tasks = (
+        visible
+        .filter(actions_completed__gte=models.F('total_actions'))
+        .order_by('-priority', 'name')
+    )
+ 
+    team_members = User.objects.filter(profile__team=team)
+    now = timezone.now()
+ 
     return render(request, 'tasks.html', {
         'uncompleted_tasks': uncompleted_tasks,
         'completed_tasks':   completed_tasks,
         'is_exec':           request.user.profile.is_exec(),
         'team_members':      team_members,
-        'team_name':         team.name,   # ← for the dropdown label
+        'team_name':         team.name,
+        'now':               now,
     })
 
 
@@ -167,14 +185,14 @@ def tasks(request):
 def add_task(request):
     if not request.user.profile.is_exec():
         return redirect('tasks')
-
+ 
     Task.objects.create(
         name="New Task",
         description="",
         team=request.user.profile.team,
         total_actions=1,
         actions_completed=0,
-        priority=100
+        priority=0   # Undetermined by default
     )
     return redirect('tasks')
 
@@ -193,31 +211,44 @@ def remove_task(request, task_id):
 @login_required
 def edit_task(request, task_id):
     task = get_object_or_404(Task, id=task_id, team=request.user.profile.team)
-
+ 
     if request.method == 'POST':
         data = json.loads(request.body)
-
+ 
         if request.user.profile.is_exec():
-            task.name        = data.get('name', task.name)
-            task.description = data.get('description', task.description)
+            task.name          = data.get('name', task.name)
+            task.description   = data.get('description', task.description)
             task.total_actions = int(data.get('total_actions', task.total_actions))
-            task.priority    = int(data.get('priority', task.priority))
-
+            task.priority      = int(data.get('priority', task.priority))
+ 
+            # Deadline: empty string clears it, ISO string sets it
+            deadline_raw = data.get('deadline', None)
+            if deadline_raw == '' or deadline_raw is None:
+                if 'deadline' in data:   # key present but empty → clear
+                    task.deadline = None
+            else:
+                from django.utils.dateparse import parse_datetime
+                parsed = parse_datetime(deadline_raw)
+                if parsed:
+                    # Make timezone-aware if USE_TZ=True and parsed is naive
+                    if timezone.is_naive(parsed):
+                        parsed = timezone.make_aware(parsed)
+                    task.deadline = parsed
+ 
             whole_team = data.get('whole_team', False)
             task.whole_team = whole_team
-
+ 
             if whole_team:
                 task.active_users.clear()
             elif 'active_users' in data:
-                from django.contrib.auth.models import User
                 ids = [int(i) for i in data['active_users'] if i]
                 task.active_users.set(User.objects.filter(id__in=ids, profile__team=task.team))
-
+ 
         if 'actions_completed' in data:
             task.actions_completed = max(0, min(int(data['actions_completed']), task.total_actions))
-
+ 
         task.save()
-
+ 
         return JsonResponse({
             'name':              task.name,
             'description':       task.description,
@@ -225,6 +256,7 @@ def edit_task(request, task_id):
             'actions_completed': task.actions_completed,
             'total_actions':     task.total_actions,
             'whole_team':        task.whole_team,
+            'deadline':          task.deadline.isoformat() if task.deadline else None,
             'active_users': [
                 {
                     'id':      u.id,
@@ -234,5 +266,5 @@ def edit_task(request, task_id):
                 for u in task.active_users.all()
             ],
         })
-
+ 
     return JsonResponse({'error': 'Invalid method'}, status=400)
