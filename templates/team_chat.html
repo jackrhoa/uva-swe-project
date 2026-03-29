@@ -115,12 +115,6 @@
         font-size: 0.98rem;
     }
 
-    .chat-time {
-        margin-top: 0.35rem;
-        font-size: 0.72rem;
-        color: var(--text-muted);
-    }
-
     .chat-input-bar {
         margin-top: 1rem;
         border-top: 1px solid var(--border-color);
@@ -351,8 +345,6 @@
                                         {% endwith %}
                                     {% endif %}
                                 {% endif %}
-
-                                <div class="chat-time"></div>
                             </div>
                         </div>
                     </div>
@@ -441,14 +433,6 @@
                 var d = new Date(el.dataset.utc);
                 el.querySelector('span').textContent = formatLocalTime(d);
                 el.setAttribute('data-time-minute', localMinuteKey(d));
-            });
-
-            messagesBox.querySelectorAll('.chat-bubble-wrap[data-utc]').forEach(function(el) {
-                var d = new Date(el.dataset.utc);
-                var timeEl = el.querySelector('.chat-time');
-                if (timeEl) {
-                    timeEl.textContent = formatLocalTime(d);
-                }
             });
         }
 
@@ -543,7 +527,6 @@
                     '<div class="chat-bubble' + (message.is_self ? ' self' : '') + '">' +
                         (message.content ? '<div class="chat-text">' + escapeHtml(message.content) + '</div>' : '') +
                         attachmentHtml +
-                        '<div class="chat-time">' + escapeHtml(formatLocalTime(date)) + '</div>' +
                     '</div>' +
                 '</div>';
 
@@ -662,7 +645,6 @@
                 if (data.type !== 'new_team_message') return;
                 var msg = data.message;
 
-                // Don't duplicate — the sender already sees it via the fetch response
                 if (String(msg.sender_id) === String(CURRENT_USER_ID)) return;
 
                 var messagesBox = document.getElementById('chat-messages');
@@ -675,6 +657,7 @@
                 var minuteKey = localMinuteKey(date);
                 var allSeps = messagesBox.querySelectorAll('.chat-time-separator');
                 var lastSep = allSeps.length ? allSeps[allSeps.length - 1] : null;
+
                 if (!lastSep || lastSep.getAttribute('data-time-minute') !== minuteKey) {
                     var sep = document.createElement('div');
                     sep.className = 'chat-time-separator';
@@ -686,12 +669,25 @@
                 var attachmentHtml = '';
                 if (msg.attachment_url) {
                     var lowerUrl = msg.attachment_url.toLowerCase();
-                    var isImage = lowerUrl.endsWith('.png') || lowerUrl.endsWith('.jpg') ||
-                                  lowerUrl.endsWith('.jpeg') || lowerUrl.endsWith('.gif') || lowerUrl.endsWith('.webp');
+                    var isImage =
+                        lowerUrl.endsWith('.png') ||
+                        lowerUrl.endsWith('.jpg') ||
+                        lowerUrl.endsWith('.jpeg') ||
+                        lowerUrl.endsWith('.gif') ||
+                        lowerUrl.endsWith('.webp');
+
                     if (isImage) {
-                        attachmentHtml = '<div class="mt-2"><img src="' + msg.attachment_url + '" alt="Attachment" class="chat-image" onclick="window.open(\'' + msg.attachment_url + '\', \'_blank\')"></div>';
+                        attachmentHtml =
+                            '<div class="mt-2">' +
+                                '<img src="' + msg.attachment_url + '" alt="Attachment" class="chat-image" onclick="window.open(\'' + msg.attachment_url + '\', \'_blank\')">' +
+                            '</div>';
                     } else {
-                        attachmentHtml = '<div class="mt-2"><a href="' + msg.attachment_url + '" target="_blank" class="btn btn-sm profile-action-btn"><i class="bi bi-paperclip me-1"></i>' + escapeHtml(msg.attachment_name) + '</a></div>';
+                        attachmentHtml =
+                            '<div class="mt-2">' +
+                                '<a href="' + msg.attachment_url + '" target="_blank" class="btn btn-sm profile-action-btn">' +
+                                    '<i class="bi bi-paperclip me-1"></i>' + escapeHtml(msg.attachment_name) +
+                                '</a>' +
+                            '</div>';
                     }
                 }
 
@@ -706,7 +702,6 @@
                         '<div class="chat-bubble">' +
                             (msg.content ? '<div class="chat-text">' + escapeHtml(msg.content) + '</div>' : '') +
                             attachmentHtml +
-                            '<div class="chat-time">' + escapeHtml(formatLocalTime(date)) + '</div>' +
                         '</div>' +
                     '</div>';
 
