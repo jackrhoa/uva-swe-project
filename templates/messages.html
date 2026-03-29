@@ -1148,7 +1148,8 @@
                         }
                         if (messageInput) {
                             messageInput.value = '';
-                            autoResizeTextarea();
+                            messageInput.style.height = '24px';
+                            messageInput.style.overflowY = 'hidden';
                             messageInput.focus();
                         }
                     } else {
