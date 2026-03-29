@@ -22,3 +22,4 @@ tzdata==2025.3
 urllib3==2.6.3
 whitenoise==6.11.0
 django-storages==1.14.4
+boto3==1.42.78

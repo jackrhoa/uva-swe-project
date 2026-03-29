@@ -4,6 +4,8 @@
 # Do not push .env secrets to git
 .env
 
+\venv311
+
 # Keep databases local to avoid conflicts
 *.sqlite3
 
