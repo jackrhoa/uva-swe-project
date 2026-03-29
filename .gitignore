@@ -1,0 +1,16 @@
+# Default ignored files
+.idea/
+
+# Do not push .env secrets to git
+.env
+
+# Keep databases local to avoid conflicts
+*.sqlite3
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Uploaded files
+media/
+message_attachments/

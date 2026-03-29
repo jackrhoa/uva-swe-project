@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}My Profile — CIO Manager{% endblock %}
+{% block nav_profile %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+    button.tool-item { background: transparent; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header animate-in delay-1">
+    <h1>My Profile</h1>
+    <p class="page-subtitle">Your account information</p>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-8 animate-in delay-2">
+        <div class="glass-card">
+            <div class="d-flex align-items-center gap-3 mb-4 pb-3" style="border-bottom:1px solid var(--border-color);">
+                {% if picture %}
+                    <img src="{{ picture }}" alt="Profile Picture" class="profile-avatar">
+                {% else %}
+                    <div class="profile-avatar-placeholder">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+                {% endif %}
+                <div class="flex-grow-1">
+                    <h2 style="font-size:1.3rem;margin-bottom:0.4rem;color:var(--text-primary);">
+                        {{ request.user.first_name }} {{ request.user.last_name }}
+                    </h2>
+                    <span class="role-badge {{ profile.role }}">
+                        <i class="bi bi-{% if profile.is_exec %}shield-fill{% else %}person-fill{% endif %}"></i>
+                        {{ profile.role|title }}
+                    </span>
+                </div>
+                <a href="{% url 'edit_profile' %}" class="btn btn-sm profile-action-btn">
+                    <i class="bi bi-pencil-square me-1"></i>Edit Name
+                </a>
+                
+            </div>
+
+            <div class="profile-info-row">
+                <span class="profile-info-label">Name</span>
+                <span class="profile-info-value">{{ request.user.first_name }} {{ request.user.last_name }}</span>
+            </div>
+            <div class="profile-info-row">
+                <span class="profile-info-label">Email</span>
+                <span class="profile-info-value">{{ request.user.email }}</span>
+            </div>
+            <div class="profile-info-row">
+                <span class="profile-info-label">Role</span>
+                <span class="profile-info-value" style="text-transform:capitalize;">{{ profile.role }}</span>
+            </div>
+            <div class="profile-info-row">
+                <span class="profile-info-label">Team</span>
+                <span class="profile-info-value" style="text-transform:capitalize;">{{ profile.team.name }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 animate-in delay-3">
+        <div class="d-flex flex-column gap-3">
+{% if profile.is_exec %}
+            <div class="glass-card">
+                <h2 style="font-size:0.95rem;">
+                    <i class="bi bi-shield-fill me-2" style="color:var(--warning);"></i>Exec
+                </h2>
+                <a href="{% url 'manage_teams' %}" class="tool-item" style="padding:0.6rem 0.65rem;">
+                    <i class="bi bi-people-fill" style="color:var(--warning);font-size:0.9rem;"></i>
+                    <span class="tool-label" style="font-size:0.85rem;">Manage Teams</span>
+                    <i class="bi bi-chevron-right chevron-right" style="font-size:0.75rem;"></i>
+                </a>
+            </div>
+            {% endif %}
+
+            <div class="glass-card">
+                <h2 style="font-size:0.95rem;">
+                    <i class="bi bi-gear-fill me-2" style="color:var(--text-secondary);"></i>Account
+                </h2>
+
+                <!-- Sign Out -->
+                <div id="signout-default">
+                    <button type="button" class="tool-item w-100 text-start border-0" style="padding:0.6rem 0.65rem;cursor:pointer;" onclick="document.getElementById('signout-default').style.display='none';document.getElementById('signout-confirm').style.display='block';">
+                        <i class="bi bi-box-arrow-right" style="color:var(--text-secondary);font-size:0.9rem;"></i>
+                        <span class="tool-label" style="font-size:0.85rem;">Sign Out</span>
+                        <i class="bi bi-chevron-right chevron-right" style="font-size:0.75rem;"></i>
+                    </button>
+                </div>
+                <div id="signout-confirm" style="display:none;padding:0.6rem 0.65rem;">
+                    <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.5rem;">Are you sure you want to sign out?</p>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm profile-action-btn" onclick="document.getElementById('signout-confirm').style.display='none';document.getElementById('signout-default').style.display='block';">Cancel</button>
+                        <form method="post" action="{% url 'account_logout' %}" style="margin:0;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm" style="background:var(--text-secondary);color:#fff;border:none;border-radius:8px;padding:0.3rem 0.8rem;font-size:0.82rem;">Sign Out</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Delete Account (members only) -->
+                {% if not profile.is_exec %}
+                <div id="delete-default">
+                    <button type="button" class="tool-item w-100 text-start border-0" style="padding:0.6rem 0.65rem;cursor:pointer;" onclick="document.getElementById('delete-default').style.display='none';document.getElementById('delete-confirm').style.display='block';">
+                        <i class="bi bi-trash3-fill" style="color:var(--danger,#ef4444);font-size:0.9rem;"></i>
+                        <span class="tool-label" style="font-size:0.85rem;color:var(--danger,#ef4444);">Delete Account</span>
+                        <i class="bi bi-chevron-right chevron-right" style="font-size:0.75rem;"></i>
+                    </button>
+                </div>
+                <div id="delete-confirm" style="display:none;padding:0.6rem 0.65rem;">
+                    <p style="font-size:0.82rem;color:var(--danger,#ef4444);margin-bottom:0.5rem;">Permanently delete your account? This cannot be undone.</p>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm profile-action-btn" onclick="document.getElementById('delete-confirm').style.display='none';document.getElementById('delete-default').style.display='block';">Cancel</button>
+                        <form method="post" action="{% url 'delete_account' %}" style="margin:0;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm" style="background:var(--danger,#ef4444);color:#fff;border:none;border-radius:8px;padding:0.3rem 0.8rem;font-size:0.82rem;">Delete</button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

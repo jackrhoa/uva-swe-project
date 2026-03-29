@@ -1,1 +1,2 @@
-web: gunicorn config.wsgi
+release: python manage.py migrate
+web: uvicorn config.asgi:application --host 0.0.0.0 --port $PORT --workers 1

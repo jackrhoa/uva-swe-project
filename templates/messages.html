@@ -1,0 +1,1271 @@
+{% extends "base.html" %}
+{% block title %}Messages — CIO Manager{% endblock %}
+{% block nav_messages %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ── Person search autocomplete ───────────────── */
+    .start-conversation-card {
+        position: relative;
+        z-index: 10;
+    }
+
+    .person-search-wrap {
+        position: relative;
+    }
+
+    .person-search-input {
+        width: 100%;
+        background: transparent !important;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 0.5rem 0.9rem;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        outline: none;
+        transition: border-color 0.15s;
+    }
+
+    .person-search-input:focus {
+        border-color: var(--border-hover);
+    }
+
+    .person-search-input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .person-dropdown {
+        display: none;
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0; right: 0;
+        background: var(--bg-card-solid);
+        border: 1px solid var(--border-hover);
+        border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        z-index: 999;
+        overflow: hidden;
+        max-height: 220px;
+        overflow-y: auto;
+    }
+
+    .person-dropdown.open { display: block; }
+
+    .person-option {
+        padding: 0.55rem 0.9rem;
+        font-size: 0.93rem;
+        color: var(--text-primary);
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .person-option:hover,
+    .person-option.active {
+        background: rgba(59,130,246,0.15);
+    }
+
+    .person-option-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .person-option .person-name { font-weight: 500; }
+
+    .person-option .person-email {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .person-team {
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 0.1rem 0.45rem;
+        border-radius: 999px;
+        background: rgba(59,130,246,0.15);
+        color: #60a5fa;
+        white-space: nowrap;
+    }
+
+    html[data-theme="light"] .person-team {
+        background: rgba(59,130,246,0.1);
+        color: #2563eb;
+    }
+
+    .person-no-results {
+        padding: 0.55rem 0.9rem;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+    }
+
+    html[data-theme="light"] .person-dropdown {
+        background: #fff;
+        border-color: rgba(0,0,0,0.12);
+    }
+
+    html[data-theme="light"] .person-option:hover,
+    html[data-theme="light"] .person-option.active {
+        background: rgba(59,130,246,0.1);
+    }
+    .chat-shell {
+        height: 620px;
+    }
+
+    .conversation-list {
+        max-height: 470px;
+        overflow-y: auto;
+    }
+
+    .conversation-list .tool-item {
+        overflow: hidden;
+    }
+
+    .conversation-list .tool-item:hover {
+        transform: none !important;
+        background: rgba(255,255,255,0.03);
+        border-color: var(--border-color);
+    }
+
+    html[data-theme="light"] .conversation-list .tool-item:hover {
+        background: rgba(0,0,0,0.03);
+    }
+
+    .chat-panel {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 0.35rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        min-height: 320px;
+        max-height: 390px;
+    }
+
+    .chat-time-separator {
+        display: flex;
+        justify-content: center;
+        margin: 0.2rem 0 0.4rem;
+    }
+
+    .chat-time-separator span {
+        font-size: 0.76rem;
+        color: var(--text-muted);
+        padding: 0.15rem 0.6rem;
+        border-radius: 999px;
+        background: transparent;
+    }
+
+    .chat-bubble-wrap {
+        display: flex;
+    }
+
+    .chat-bubble-wrap.self {
+        justify-content: flex-end;
+    }
+
+    .chat-image {
+        max-width: 260px;
+        max-height: 260px;
+        border-radius: 14px;
+        cursor: pointer;
+        border: 1px solid var(--border-color);
+        display: block;
+        transition: transform 0.2s ease;
+    }
+
+    .chat-image:hover {
+        transform: scale(1.02);
+    }
+
+    .chat-bubble {
+        max-width: 78%;
+        padding: 0.85rem 1rem;
+        border-radius: 18px;
+        border: 1px solid rgba(59,130,246,0.18);
+        background: rgba(59,130,246,0.10);
+    }
+
+    .chat-bubble.self {
+        background: rgba(59,130,246,0.18);
+        border-color: rgba(59,130,246,0.24);
+    }
+
+    .chat-text {
+        white-space: pre-wrap;
+        word-break: break-word;
+        line-height: 1.42;
+        font-size: 0.98rem;
+    }
+
+    .chat-input-bar {
+        margin-top: 1rem;
+        border-top: 1px solid var(--border-color);
+        padding-top: 1rem;
+    }
+
+    .ig-input-shell {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        border: 1px solid var(--border-color);
+        border-radius: 999px;
+        padding: 0.45rem 0.72rem 0.45rem 0.95rem;
+        background: transparent !important;
+        box-shadow: none !important;
+        min-height: 48px;
+    }
+
+    .ig-input-shell:focus-within {
+        background: transparent !important;
+        box-shadow: none !important;
+        border-color: var(--border-color);
+    }
+
+    .ig-message-input,
+    .ig-input-shell textarea,
+    .ig-input-shell .form-control,
+    .ig-input-shell .profile-input {
+        flex: 1;
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        color: var(--text-primary) !important;
+        resize: none;
+        min-height: 24px;
+        height: 24px;
+        max-height: 120px;
+        line-height: 24px;
+        padding: 0 !important;
+        margin: 0 !important;
+        overflow-y: hidden;
+        font-size: 0.98rem;
+        border-radius: 0 !important;
+        vertical-align: middle;
+    }
+
+    .ig-message-input:focus,
+    .ig-input-shell textarea:focus,
+    .ig-input-shell .form-control:focus,
+    .ig-input-shell .profile-input:focus {
+        outline: none !important;
+        box-shadow: none !important;
+        border: none !important;
+        background: transparent !important;
+    }
+
+    .ig-message-input::placeholder {
+        color: var(--text-muted);
+    }
+
+    html[data-theme="light"] .ig-input-shell,
+    html[data-theme="light"] .ig-message-input,
+    html[data-theme="light"] .ig-input-shell textarea,
+    html[data-theme="light"] .ig-input-shell .form-control,
+    html[data-theme="light"] .ig-input-shell .profile-input {
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    html[data-theme="light"] .ig-input-shell:focus-within {
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .ig-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.1rem;
+        flex-shrink: 0;
+        padding-bottom: 0;
+    }
+
+    .icon-inline-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: none;
+        background: transparent;
+        color: var(--text-primary);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.2s ease, transform 0.2s ease;
+        flex-shrink: 0;
+        font-size: 1.05rem;
+        padding: 0;
+    }
+
+    .icon-inline-btn:hover {
+        background: rgba(255,255,255,0.05);
+        transform: scale(1.02);
+    }
+
+    html[data-theme="light"] .icon-inline-btn:hover {
+        background: rgba(0,0,0,0.05);
+    }
+
+    .hidden-file-input {
+        display: none;
+    }
+
+
+    .conversation-list .tool-item.has-unread {
+        background: rgba(99, 102, 241, 0.12);
+        border-left: 3px solid var(--primary, #6366f1);
+    }
+
+    .conversation-list .tool-item.has-unread:hover {
+        background: rgba(99, 102, 241, 0.18);
+    }
+
+    html[data-theme="light"] .conversation-list .tool-item.has-unread {
+        background: rgba(99, 102, 241, 0.08);
+    }
+
+    html[data-theme="light"] .conversation-list .tool-item.has-unread:hover {
+        background: rgba(99, 102, 241, 0.14);
+    }
+
+    .attachment-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-top: 0.55rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        border: 1px solid var(--border-color);
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        background: rgba(255,255,255,0.03);
+    }
+
+    .attachment-chip-remove {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        padding: 0;
+        margin-left: 0.1rem;
+        color: var(--text-secondary);
+        cursor: pointer;
+        line-height: 1;
+        font-size: 0.85rem;
+    }
+
+    .attachment-chip:hover .attachment-chip-remove {
+        display: flex;
+    }
+
+    .attachment-chip-remove:hover {
+        color: var(--danger);
+    }
+
+    .start-select {
+        margin-bottom: 0.9rem;
+    }
+
+    .chat-bubble-wrap.self {
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .msg-deleted-placeholder {
+        font-style: italic;
+        font-size: 0.88rem;
+        color: var(--text-muted);
+    }
+
+    /* ── Three-dot message menu ───────────────────── */
+    .msg-menu-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+        order: -1;
+    }
+
+    .msg-menu-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 1rem;
+        cursor: pointer;
+        padding: 0.2rem 0.3rem;
+        border-radius: 6px;
+        line-height: 1;
+        transition: color 0.15s, background 0.15s;
+    }
+
+    .msg-menu-btn:hover { color: var(--text-primary); }
+
+    .msg-menu-dropdown {
+        display: none;
+        position: absolute;
+        bottom: calc(100% + 4px);
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--bg-card-solid);
+        border: 1px solid var(--border-hover);
+        border-radius: 8px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+        z-index: 100;
+        overflow: hidden;
+    }
+
+    .msg-menu-dropdown.flip-down {
+        bottom: auto;
+        top: calc(100% + 4px);
+    }
+
+    .msg-menu-wrap.open .msg-menu-dropdown { display: block; }
+
+    .msg-menu-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.45rem 0.6rem;
+        font-size: 0.95rem;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-muted);
+        transition: color 0.15s, background 0.15s;
+    }
+
+    .msg-menu-item:hover {
+        color: var(--danger);
+        background: rgba(248,113,113,0.1);
+    }
+
+    html[data-theme="light"] .msg-menu-dropdown {
+        background: #fff;
+        border-color: rgba(0,0,0,0.12);
+    }
+
+    /* ── Confirmation popup ───────────────────────── */
+    .delete-confirm-popup {
+        position: fixed;
+        background: var(--bg-card-solid);
+        border: 1px solid var(--border-hover);
+        border-radius: 10px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        padding: 0.6rem 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        white-space: nowrap;
+        z-index: 100;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    .delete-confirm-popup button {
+        border: none;
+        border-radius: 6px;
+        padding: 0.2rem 0.55rem;
+        font-size: 0.82rem;
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+    .delete-confirm-yes {
+        background: rgba(248,113,113,0.15);
+        color: var(--danger);
+    }
+
+    .delete-confirm-yes:hover { background: rgba(248,113,113,0.28); }
+
+    .delete-confirm-no {
+        background: rgba(255,255,255,0.06);
+        color: var(--text-secondary);
+    }
+
+    .delete-confirm-no:hover { background: rgba(255,255,255,0.12); }
+
+    html[data-theme="light"] .delete-confirm-popup {
+        background: #fff;
+        border-color: rgba(0,0,0,0.12);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    }
+
+    html[data-theme="light"] .delete-confirm-no {
+        background: rgba(0,0,0,0.05);
+    }
+
+    html[data-theme="light"] .delete-confirm-no:hover {
+        background: rgba(0,0,0,0.1);
+    }
+
+    .send-loading {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+    .avatar-initials {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.92rem;
+        background: rgba(59,130,246,0.12);
+        color: #60a5fa;
+        flex-shrink: 0;
+        box-shadow: 0 0 15px rgba(59,130,246,0.08);
+        text-transform: uppercase;
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header animate-in delay-1">
+    <h1>Messages</h1>
+    <p class="page-subtitle">Send direct messages and share files</p>
+</div>
+
+<div class="row g-3 chat-shell">
+    <div class="col-lg-4 animate-in delay-2">
+        <div class="glass-card mb-3 start-conversation-card">
+            <h2>Start Conversation</h2>
+            {% if not is_exec %}
+                <p class="tool-desc mb-3" style="margin-top:-0.5rem;">You can message members of your team.</p>
+            {% endif %}
+            <form method="post" action="{% url 'start_conversation' %}">
+                {% csrf_token %}
+                <div class="start-select">
+                    {# hidden select so the form posts the right value #}
+                    <div style="display:none">{{ start_form.recipient }}</div>
+                    <div class="person-search-wrap">
+                        <input type="text"
+                               id="person-search-input"
+                               class="person-search-input"
+                               placeholder="Search for a person"
+                               autocomplete="off">
+                        <div class="person-dropdown" id="person-dropdown"></div>
+                    </div>
+                </div>
+                <button type="submit" class="btn-gradient">
+                    <i class="bi bi-plus-circle"></i>Open Chat
+                </button>
+            </form>
+        </div>
+
+        <div class="glass-card">
+            <h2>Conversations</h2>
+            <div class="d-flex flex-column gap-2 conversation-list" id="conversation-list">
+                {% for item in conversations %}
+                    <a href="{% url 'message_list' %}?conversation={{ item.conversation.id }}"
+                       class="tool-item {% if active_conversation and active_conversation.id == item.conversation.id %}profile-action-btn{% endif %}{% if item.has_unread %} has-unread{% endif %}"
+                       data-conversation-id="{{ item.conversation.id }}">
+                        {% if item.other_user %}
+                            {% with first=item.other_user.first_name|default:"" last=item.other_user.last_name|default:"" %}
+                                {% if first or last %}
+                                    <div class="avatar-initials">{{ first|slice:":1" }}{{ last|slice:":1" }}</div>
+                                {% else %}
+                                    <div class="tool-icon blue"><i class="bi bi-person-fill"></i></div>
+                                {% endif %}
+                            {% endwith %}
+                            <div style="flex:1;min-width:0;">
+                                <div class="tool-label">{{ item.other_user.first_name }} {{ item.other_user.last_name }}</div>
+                                {% if item.last_message %}
+                                    {% if item.last_message.is_deleted %}
+                                        <div class="tool-desc conversation-preview" data-last-message-id="{{ item.last_message.id }}">This message was deleted</div>
+                                    {% elif item.last_message.content %}
+                                        <div class="tool-desc conversation-preview" data-last-message-id="{{ item.last_message.id }}">{% if item.last_message.sender == request.user %}You: {% endif %}{{ item.last_message.content|truncatechars:20 }}</div>
+                                    {% else %}
+                                        <div class="tool-desc conversation-preview" data-last-message-id="{{ item.last_message.id }}">{% if item.last_message.sender == request.user %}You sent an attachment.{% else %}Attachment{% endif %}</div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="tool-desc conversation-preview">{{ item.other_user.email }}</div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <div class="tool-icon blue"><i class="bi bi-person-fill"></i></div>
+                            <div style="flex:1;min-width:0;">
+                                <div class="tool-label" style="color:var(--text-muted);font-style:italic;">Deleted User</div>
+                                <div class="tool-desc conversation-preview">Account removed</div>
+                            </div>
+                        {% endif %}
+                    </a>
+                {% empty %}
+                    <div class="tool-desc">No conversations yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8 animate-in delay-3">
+        <div class="glass-card chat-panel">
+            {% if active_conversation %}
+                {% if active_other_user %}
+                    <h2>Chat with {{ active_other_user.first_name }} {{ active_other_user.last_name }}</h2>
+                    <div class="tool-desc mb-3">{{ active_other_user.email }}</div>
+                {% else %}
+                    <h2>Chat with <span style="color:var(--text-muted);font-style:italic;">Deleted User</span></h2>
+                    <div class="tool-desc mb-3">Account removed</div>
+                {% endif %}
+
+                <div class="chat-messages" id="chat-messages">
+                    {% for message in active_conversation.messages.all %}
+                        {% ifchanged message.created_at|date:"Y-m-d H:i" %}
+                            <div class="chat-time-separator" data-utc="{{ message.created_at.isoformat }}">
+                                <span></span>
+                            </div>
+                        {% endifchanged %}
+
+                        <div class="chat-bubble-wrap {% if message.sender == request.user %}self{% endif %}"
+                             data-utc="{{ message.created_at.isoformat }}"
+                             data-message-id="{{ message.id }}">
+                            {% if message.is_deleted %}
+                                <span class="msg-deleted-placeholder">This message was deleted</span>
+                            {% else %}
+                                <div class="chat-bubble {% if message.sender == request.user %}self{% endif %}">
+                                    {% if message.content %}
+                                        <div class="chat-text">{{ message.content }}</div>
+                                    {% endif %}
+
+                                    {% if message.attachment %}
+                                        {% with file_url=message.attachment.url|lower %}
+                                            {% if file_url|slice:"-4:" == ".png" or file_url|slice:"-4:" == ".jpg" or file_url|slice:"-5:" == ".jpeg" or file_url|slice:"-4:" == ".gif" or file_url|slice:"-5:" == ".webp" %}
+                                                <div class="mt-2">
+                                                    <img src="{{ message.attachment.url }}"
+                                                         alt="Attachment"
+                                                         class="chat-image"
+                                                         onclick="window.open('{{ message.attachment.url }}', '_blank')">
+                                                </div>
+                                            {% else %}
+                                                <div class="mt-2">
+                                                    <a href="{{ message.attachment.url }}" target="_blank" class="btn btn-sm profile-action-btn">
+                                                        <i class="bi bi-paperclip me-1"></i>{{ message.attachment.name|cut:"message_attachments/" }}
+                                                    </a>
+                                                </div>
+                                            {% endif %}
+                                        {% endwith %}
+                                    {% endif %}
+                                </div>
+                                {% if message.sender == request.user %}
+                                    <div class="msg-menu-wrap">
+                                        <button class="msg-menu-btn" data-message-id="{{ message.id }}" title="Message options">&#8942;</button>
+                                        <div class="msg-menu-dropdown">
+                                            <button class="msg-menu-item" data-message-id="{{ message.id }}" title="Delete message">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    {% empty %}
+                        <div class="tool-desc" id="no-messages-hint">No messages yet. Start the conversation below.</div>
+                    {% endfor %}
+                </div>
+
+                <div class="chat-input-bar">
+                    <form method="post" action="{% url 'send_message' active_conversation.id %}" enctype="multipart/form-data" id="message-form">
+                        {% csrf_token %}
+                        <div class="ig-input-shell">
+                            {{ message_form.content }}
+
+                            <div class="ig-actions">
+                                <label for="id_attachment" class="icon-inline-btn" title="Attach file">
+                                    <i class="bi bi-paperclip"></i>
+                                </label>
+                                {{ message_form.attachment }}
+                                <button type="submit" class="icon-inline-btn" title="Send message" id="send-btn">
+                                    <i class="bi bi-send"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="selected-file-name" class="attachment-chip" style="display:none;"></div>
+                    </form>
+                </div>
+            {% else %}
+                <h2>Select a conversation</h2>
+                <p class="page-subtitle mb-0">Choose an existing chat or start a new one.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    var RECIPIENT_OPTIONS = {{ recipient_options_json|safe }};
+    {% if active_conversation %}
+    var ACTIVE_CONVERSATION_ID = {{ active_conversation.id }};
+    {% else %}
+    var ACTIVE_CONVERSATION_ID = null;
+    {% endif %}
+</script>
+<script>
+    (function () {
+        var attachmentInput = document.getElementById('id_attachment');
+        var fileNameChip = document.getElementById('selected-file-name');
+        var messageInput = document.getElementById('id_content');
+        var form = document.getElementById('message-form');
+        var messagesBox = document.getElementById('chat-messages');
+        var sendBtn = document.getElementById('send-btn');
+        var conversationList = document.getElementById('conversation-list');
+
+        // ── Person search autocomplete ──────────────────
+        (function () {
+            var hiddenSelect = document.getElementById('recipient-select');
+            var searchInput  = document.getElementById('person-search-input');
+            var dropdown     = document.getElementById('person-dropdown');
+            if (!hiddenSelect || !searchInput || !dropdown) return;
+
+            var options = (typeof RECIPIENT_OPTIONS !== 'undefined') ? RECIPIENT_OPTIONS : [];
+
+            var activeIndex = -1;
+
+            function render(filtered) {
+                if (!filtered.length) {
+                    dropdown.innerHTML = '<div class="person-no-results">No people found</div>';
+                } else {
+                    dropdown.innerHTML = filtered.map(function(o, i) {
+                        var teamBadge = o.team
+                            ? '<span class="person-team">' + o.team + '</span>'
+                            : '';
+                        return '<div class="person-option" data-value="' + o.value + '" data-index="' + i + '">' +
+                               '<div class="person-option-row">' +
+                                   '<div class="person-name">' + o.name + '</div>' +
+                                   teamBadge +
+                               '</div>' +
+                               (o.email ? '<div class="person-email">' + o.email + '</div>' : '') +
+                               '</div>';
+                    }).join('');
+                }
+                activeIndex = -1;
+                dropdown.classList.add('open');
+            }
+
+            function select(value, label) {
+                hiddenSelect.value = value;
+                searchInput.value = label;
+                dropdown.classList.remove('open');
+            }
+
+            function highlight(index) {
+                var items = dropdown.querySelectorAll('.person-option');
+                items.forEach(function(el) { el.classList.remove('active'); });
+                if (items[index]) {
+                    items[index].classList.add('active');
+                    items[index].scrollIntoView({ block: 'nearest' });
+                }
+                activeIndex = index;
+            }
+
+            function filterAndRender() {
+                var q = searchInput.value.toLowerCase();
+                var filtered = q
+                    ? options.filter(function(o) {
+                        return o.name.toLowerCase().includes(q) || o.email.toLowerCase().includes(q);
+                      })
+                    : options;
+                render(filtered);
+            }
+
+            searchInput.addEventListener('focus', filterAndRender);
+
+            searchInput.addEventListener('input', function() {
+                if (!searchInput.value) hiddenSelect.value = '';
+                filterAndRender();
+            });
+
+            searchInput.addEventListener('keydown', function(e) {
+                var items = dropdown.querySelectorAll('.person-option');
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    highlight(Math.min(activeIndex + 1, items.length - 1));
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    highlight(Math.max(activeIndex - 1, 0));
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (items[activeIndex]) items[activeIndex].click();
+                } else if (e.key === 'Escape') {
+                    dropdown.classList.remove('open');
+                }
+            });
+
+            dropdown.addEventListener('mousedown', function(e) {
+                var opt = e.target.closest('.person-option');
+                if (!opt) return;
+                e.preventDefault();
+                select(opt.dataset.value, opt.querySelector('.person-name').textContent);
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.remove('open');
+                }
+            });
+        })();
+        // ───────────────────────────────────────────────
+
+        function scrollToBottom() {
+            if (messagesBox) {
+                messagesBox.scrollTop = messagesBox.scrollHeight;
+            }
+        }
+
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function autoResizeTextarea() {
+            if (!messageInput) return;
+            messageInput.style.height = '24px';
+            messageInput.style.overflowY = 'hidden';
+
+            var nextHeight = Math.min(messageInput.scrollHeight, 120);
+            messageInput.style.height = nextHeight + 'px';
+
+            if (messageInput.scrollHeight > 120) {
+                messageInput.style.overflowY = 'auto';
+            }
+        }
+
+        function formatLocalTime(date) {
+            return date.toLocaleString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric',
+                hour: 'numeric', minute: '2-digit', hour12: true
+            });
+        }
+
+        function localMinuteKey(date) {
+            return date.getFullYear() + '-' +
+                String(date.getMonth() + 1).padStart(2, '0') + '-' +
+                String(date.getDate()).padStart(2, '0') + ' ' +
+                String(date.getHours()).padStart(2, '0') + ':' +
+                String(date.getMinutes()).padStart(2, '0');
+        }
+
+        // Convert all server-rendered time separators to local time
+        if (messagesBox) {
+            messagesBox.querySelectorAll('.chat-time-separator[data-utc]').forEach(function(el) {
+                var d = new Date(el.dataset.utc);
+                el.querySelector('span').textContent = formatLocalTime(d);
+                el.setAttribute('data-time-minute', localMinuteKey(d));
+            });
+        }
+
+        function maybeInsertTimeSeparator(date) {
+            if (!messagesBox) return;
+
+            var minuteKey = localMinuteKey(date);
+            var allSeparators = messagesBox.querySelectorAll('.chat-time-separator');
+            var lastSeparator = allSeparators.length ? allSeparators[allSeparators.length - 1] : null;
+            var lastMinute = lastSeparator ? lastSeparator.getAttribute('data-time-minute') : null;
+
+            if (lastMinute !== minuteKey) {
+                var separator = document.createElement('div');
+                separator.className = 'chat-time-separator';
+                separator.setAttribute('data-time-minute', minuteKey);
+                separator.innerHTML = '<span>' + escapeHtml(formatLocalTime(date)) + '</span>';
+                messagesBox.appendChild(separator);
+            }
+        }
+
+        function appendMessage(message) {
+            if (!messagesBox) return;
+
+            var hint = document.getElementById('no-messages-hint');
+            if (hint) hint.remove();
+
+            var date = new Date(message.created_at_iso);
+            maybeInsertTimeSeparator(date);
+
+            var wrapper = document.createElement('div');
+            wrapper.className = 'chat-bubble-wrap' + (message.is_self ? ' self' : '');
+            wrapper.dataset.timeMinute = message.created_at_minute;
+            if (message.id) wrapper.dataset.messageId = message.id;
+
+            var bubble = document.createElement('div');
+            bubble.className = 'chat-bubble' + (message.is_self ? ' self' : '');
+
+            var attachmentHtml = '';
+            if (message.attachment_url) {
+                var lowerUrl = message.attachment_url.toLowerCase();
+                var isImage =
+                    lowerUrl.endsWith('.png') ||
+                    lowerUrl.endsWith('.jpg') ||
+                    lowerUrl.endsWith('.jpeg') ||
+                    lowerUrl.endsWith('.gif') ||
+                    lowerUrl.endsWith('.webp');
+
+                if (isImage) {
+                    attachmentHtml =
+                        '<div class="mt-2">' +
+                            '<img src="' + message.attachment_url + '" alt="Attachment" class="chat-image" onclick="window.open(\'' + message.attachment_url + '\', \'_blank\')">' +
+                        '</div>';
+                } else {
+                    attachmentHtml =
+                        '<div class="mt-2">' +
+                            '<a href="' + message.attachment_url + '" target="_blank" class="btn btn-sm profile-action-btn">' +
+                                '<i class="bi bi-paperclip me-1"></i>' + escapeHtml(message.attachment_name) +
+                            '</a>' +
+                        '</div>';
+                }
+            }
+
+            bubble.innerHTML =
+                (message.content ? '<div class="chat-text">' + escapeHtml(message.content) + '</div>' : '') +
+                attachmentHtml;
+
+            wrapper.appendChild(bubble);
+
+            if (message.is_self && message.id) {
+                var menuWrap = document.createElement('div');
+                menuWrap.className = 'msg-menu-wrap';
+                menuWrap.innerHTML =
+                    '<button class="msg-menu-btn" data-message-id="' + message.id + '" title="Message options">&#8942;</button>' +
+                    '<div class="msg-menu-dropdown">' +
+                        '<button class="msg-menu-item" data-message-id="' + message.id + '" title="Delete message">' +
+                            '<i class="bi bi-trash"></i>' +
+                        '</button>' +
+                    '</div>';
+                wrapper.appendChild(menuWrap);
+            }
+
+            messagesBox.appendChild(wrapper);
+            scrollToBottom();
+            wrapper.querySelectorAll('img').forEach(function(img) {
+                if (!img.complete) img.addEventListener('load', scrollToBottom);
+            });
+        }
+
+        function updateConversationPreview(message) {
+            if (!conversationList || !ACTIVE_CONVERSATION_ID) return;
+            var item = conversationList.querySelector('[data-conversation-id="' + ACTIVE_CONVERSATION_ID + '"]');
+            if (!item) return;
+
+            var preview = item.querySelector('.conversation-preview');
+            if (!preview) return;
+
+            var text;
+            if (message.content) {
+                var prefix = message.is_self ? 'You: ' : '';
+                var truncated = message.content.length > 20 ? message.content.slice(0, 20) + '...' : message.content;
+                text = prefix + truncated;
+            } else if (message.attachment_name) {
+                text = message.is_self ? 'You sent an attachment.' : 'Attachment';
+            }
+            if (text) preview.textContent = text;
+            preview.dataset.lastMessageId = message.id;
+
+            conversationList.prepend(item);
+        }
+
+        function updatePreviewForDeletion(messageId) {
+            if (!conversationList || !ACTIVE_CONVERSATION_ID) return;
+            var item = conversationList.querySelector('[data-conversation-id="' + ACTIVE_CONVERSATION_ID + '"]');
+            if (!item) return;
+            var preview = item.querySelector('.conversation-preview');
+            if (!preview) return;
+            if (String(preview.dataset.lastMessageId) === String(messageId)) {
+                preview.textContent = 'This message was deleted';
+            }
+        }
+
+        // Global confirmation popup (fixed-positioned, body-level)
+        var confirmPopup = document.createElement('div');
+        confirmPopup.className = 'delete-confirm-popup';
+        confirmPopup.style.display = 'none';
+        confirmPopup.innerHTML =
+            'Delete this message?' +
+            '<button class="delete-confirm-yes">Delete</button>' +
+            '<button class="delete-confirm-no">Cancel</button>';
+        document.body.appendChild(confirmPopup);
+
+        function closeConfirm() {
+            confirmPopup.style.display = 'none';
+            confirmPopup.dataset.messageId = '';
+        }
+
+        confirmPopup.querySelector('.delete-confirm-yes').addEventListener('click', function() {
+            var messageId = confirmPopup.dataset.messageId;
+            if (!messageId) return;
+            var wrap = document.querySelector('.chat-bubble-wrap[data-message-id="' + messageId + '"]');
+            closeConfirm();
+            fetch('/messages/delete/' + messageId + '/', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.ok && wrap) {
+                    wrap.innerHTML = '<span class="msg-deleted-placeholder">This message was deleted</span>';
+                    wrap.removeAttribute('data-message-id');
+                    updatePreviewForDeletion(messageId);
+                }
+            });
+        });
+
+        confirmPopup.querySelector('.delete-confirm-no').addEventListener('click', closeConfirm);
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.delete-confirm-popup') && !e.target.closest('.msg-menu-item')) {
+                closeConfirm();
+            }
+        });
+
+        // Toggle the menu open/closed when clicking the ⋮ button
+        document.addEventListener('click', function(e) {
+            var btn = e.target.closest('.msg-menu-btn');
+            if (btn) {
+                e.stopPropagation();
+                var wrap = btn.closest('.msg-menu-wrap');
+                var isOpen = wrap.classList.contains('open');
+                document.querySelectorAll('.msg-menu-wrap.open').forEach(function(w) { w.classList.remove('open'); });
+                if (!isOpen) {
+                    wrap.classList.add('open');
+                    var dropdown = wrap.querySelector('.msg-menu-dropdown');
+                    var rect = btn.getBoundingClientRect();
+                    var dropdownHeight = dropdown.offsetHeight || 40;
+                    var container = document.getElementById('chat-messages');
+                    var containerTop = container ? container.getBoundingClientRect().top : 0;
+                    dropdown.classList.toggle('flip-down', rect.top - dropdownHeight < containerTop);
+                }
+                return;
+            }
+            // Close any open menu when clicking outside
+            if (!e.target.closest('.msg-menu-wrap')) {
+                document.querySelectorAll('.msg-menu-wrap.open').forEach(function(w) { w.classList.remove('open'); });
+            }
+        });
+
+        // Clicking the trash item shows the confirm popup anchored to the ⋮ button
+        document.addEventListener('click', function(e) {
+            var item = e.target.closest('.msg-menu-item');
+            if (!item) return;
+            var messageId = item.dataset.messageId;
+            if (!messageId) return;
+            var menuWrap = item.closest('.msg-menu-wrap');
+            menuWrap.classList.remove('open');
+            var anchor = menuWrap.querySelector('.msg-menu-btn');
+            confirmPopup.dataset.messageId = messageId;
+            confirmPopup.style.display = 'flex';
+            var r = anchor.getBoundingClientRect();
+            var pw = confirmPopup.offsetWidth;
+            var ph = confirmPopup.offsetHeight;
+            var top = r.top - ph - 6;
+            if (top < 4) top = r.bottom + 6;
+            var left = r.left + r.width / 2 - pw / 2;
+            confirmPopup.style.top  = Math.max(4, top) + 'px';
+            confirmPopup.style.left = Math.max(4, Math.min(left, window.innerWidth - pw - 4)) + 'px';
+        });
+
+        function clearAttachment() {
+            attachmentInput.value = '';
+            fileNameChip.style.display = 'none';
+            fileNameChip.innerHTML = '';
+        }
+
+        function onAttachmentChange() {
+            if (attachmentInput.files.length > 0) {
+                fileNameChip.style.display = 'inline-flex';
+                fileNameChip.innerHTML =
+                    '<i class="bi bi-paperclip"></i>' +
+                    escapeHtml(attachmentInput.files[0].name) +
+                    '<button type="button" class="attachment-chip-remove" title="Remove attachment"><i class="bi bi-x"></i></button>';
+                fileNameChip.querySelector('.attachment-chip-remove').addEventListener('click', clearAttachment);
+            } else {
+                fileNameChip.style.display = 'none';
+                fileNameChip.innerHTML = '';
+            }
+        }
+
+        if (attachmentInput) {
+            attachmentInput.classList.add('hidden-file-input');
+            attachmentInput.addEventListener('change', onAttachmentChange);
+        }
+
+        if (messageInput) {
+            messageInput.classList.add('ig-message-input');
+            messageInput.rows = 1;
+            autoResizeTextarea();
+
+            messageInput.addEventListener('input', autoResizeTextarea);
+
+            messageInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    form.requestSubmit();
+                }
+            });
+        }
+
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                var text = messageInput ? messageInput.value.trim() : '';
+                var hasFile = attachmentInput && attachmentInput.files.length > 0;
+
+                if (!text && !hasFile) {
+                    return;
+                }
+
+                var formData = new FormData(form);
+                form.classList.add('send-loading');
+                if (sendBtn) sendBtn.disabled = true;
+
+                fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                })
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (data) {
+                    if (data.ok) {
+                        appendMessage(data.message);
+                        updateConversationPreview(data.message);
+                        form.reset();
+                        if (fileNameChip) {
+                            fileNameChip.style.display = 'none';
+                            fileNameChip.innerHTML = '';
+                        }
+                        if (messageInput) {
+                            messageInput.value = '';
+                            messageInput.style.height = '24px';
+                            messageInput.style.overflowY = 'hidden';
+                            messageInput.focus();
+                        }
+                    } else {
+                        alert('Could not send message.');
+                    }
+                })
+                .catch(function () {
+                    alert('Could not send message.');
+                })
+                .finally(function () {
+                    form.classList.remove('send-loading');
+                    if (sendBtn) sendBtn.disabled = false;
+                });
+            });
+        }
+
+        window._appendMessage = appendMessage;
+        window._updatePreviewForDeletion = updatePreviewForDeletion;
+        scrollToBottom();
+
+    })();
+</script>
+<script>
+    (function () {
+        var wsUrl = (location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/chat/';
+        var ws;
+
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function connect() {
+            ws = new WebSocket(wsUrl);
+
+            ws.onmessage = function (e) {
+                var data = JSON.parse(e.data);
+
+                if (data.type === 'message_deleted') {
+                    var wrap = document.querySelector('.chat-bubble-wrap[data-message-id="' + data.message_id + '"]');
+                    if (wrap) {
+                        wrap.innerHTML = '<span class="msg-deleted-placeholder">This message was deleted</span>';
+                        wrap.removeAttribute('data-message-id');
+                    }
+                    if (window._updatePreviewForDeletion) window._updatePreviewForDeletion(data.message_id);
+                    return;
+                }
+
+                if (data.type !== 'new_message') return;
+                var msg = data.message;
+
+                // Update or create sidebar conversation item
+                var list = document.getElementById('conversation-list');
+                var item = document.querySelector('[data-conversation-id="' + msg.conversation_id + '"]');
+                if (!item && list) {
+                    // New conversation — build the sidebar entry from scratch
+                    var noConvHint = list.querySelector('.tool-desc:not(.conversation-preview)');
+                    if (noConvHint) noConvHint.remove();
+
+                    item = document.createElement('a');
+                    item.href = '/messages/?conversation=' + msg.conversation_id;
+                    item.className = 'tool-item has-unread';
+                    item.setAttribute('data-conversation-id', msg.conversation_id);
+
+                    var truncated = msg.content && msg.content.length > 20 ? msg.content.slice(0, 20) + '...' : (msg.content || 'Attachment');
+                    item.innerHTML =
+                        '<div class="avatar-initials">' + escapeHtml(msg.sender_initials || '?') + '</div>' +
+                        '<div style="flex:1;min-width:0;">' +
+                            '<div class="tool-label">' + escapeHtml(msg.sender_name || msg.sender_email || 'Unknown') + '</div>' +
+                            '<div class="tool-desc conversation-preview" data-last-message-id="' + msg.id + '">' + escapeHtml(truncated) + '</div>' +
+                        '</div>';
+                    list.prepend(item);
+                } else if (item) {
+                    item.classList.add('has-unread');
+                    if (list) list.prepend(item);
+                    var preview = item.querySelector('.conversation-preview');
+                    if (preview) {
+                        var truncated = msg.content && msg.content.length > 20 ? msg.content.slice(0, 20) + '...' : (msg.content || 'Attachment');
+                        preview.textContent = truncated;
+                        preview.dataset.lastMessageId = msg.id;
+                    }
+                }
+
+                // Only append to chat if this conversation is currently active
+                if (!ACTIVE_CONVERSATION_ID || String(msg.conversation_id) !== String(ACTIVE_CONVERSATION_ID)) return;
+
+                var appendMessage = window._appendMessage;
+                if (appendMessage) {
+                    appendMessage({
+                        id: msg.id,
+                        content: msg.content,
+                        attachment_url: msg.attachment_url,
+                        attachment_name: msg.attachment_name,
+                        created_at_iso: msg.created_at_iso,
+                        is_self: false,
+                    });
+                }
+
+                // Mark as read since the chat is open
+                fetch('/messages/mark-read/' + msg.conversation_id + '/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    }
+                });
+            };
+
+            ws.onclose = function () {
+                setTimeout(connect, 3000);
+            };
+        }
+
+        connect();
+    })();
+</script>
+{% endblock %}

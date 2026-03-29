@@ -1,0 +1,237 @@
+{% extends "base.html" %} 
+{% block title %}Manage Teams — CIO Manager{% endblock %} 
+{% block nav_teams %}active{%endblock %} 
+
+{% block extra_css %}
+<style>
+    /* ── Team tag chips ──────────────────────────── */
+    .team-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-family: 'Outfit', sans-serif;
+        font-size: 0.82rem;
+        font-weight: 600;
+        padding: 0.3rem 0.65rem;
+        border-radius: 8px;
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        transition: border-color 0.2s ease;
+    }
+    .team-delete-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 0.9rem;
+        line-height: 1;
+        padding: 0;
+        transition: color 0.15s ease, background 0.15s ease;
+    }
+    .team-delete-btn:hover {
+        color: var(--danger);
+        background: rgba(248, 113, 113, 0.12);
+    }
+
+    /* ── Add-team form input ─────────────────────── */
+    .team-input {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 0.35rem 0.75rem;
+        color: var(--text-primary);
+        font-family: 'General Sans', sans-serif;
+        font-size: 0.82rem;
+        transition: border-color 0.2s ease, background 0.2s ease;
+        outline: none;
+        width: 180px;
+    }
+    .team-input::placeholder { color: var(--text-muted); }
+    .team-input:focus {
+        border-color: var(--accent-2);
+        background: var(--bg-elevated);
+    }
+
+    /* ── Team-select dropdown ────────────────────── */
+    .team-select-wrap {
+        position: relative;
+        display: inline-block;
+    }
+    .team-select-wrap::after {
+        content: '▾';
+        position: absolute;
+        right: 0.55rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.65rem;
+        pointer-events: none;
+        opacity: 0.6;
+    }
+    .team-select-badge {
+        appearance: none;
+        -webkit-appearance: none;
+        border-radius: 20px;
+        font-family: 'Outfit', sans-serif;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: none;
+        letter-spacing: 0.06em;
+        padding: 0.4rem 1.6rem 0.4rem 0.9rem;
+        min-width: 120px;
+        cursor: pointer;
+        transition: opacity 0.15s ease;
+    }
+    .team-select-badge:hover { opacity: 0.8; }
+    .team-select-badge.No\ Team,
+    .team-select-badge.no-team {
+        background: var(--bg-elevated);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+    }
+
+    /* light-mode overrides */
+    html[data-theme="light"] .team-tag {
+        background: rgba(0,0,0,0.05);
+        border-color: rgba(0,0,0,0.1);
+    }
+    html[data-theme="light"] .team-input {
+        background: rgba(0,0,0,0.04);
+        border-color: rgba(0,0,0,0.12);
+        color: var(--text-primary);
+    }
+    html[data-theme="light"] .team-input:focus {
+        background: rgba(0,0,0,0.06);
+    }
+    html[data-theme="light"] .team-select-badge.No\ Team,
+    html[data-theme="light"] .team-select-badge.no-team {
+        background: rgba(0,0,0,0.05);
+        color: var(--text-secondary);
+        border-color: rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %} 
+
+{% block content %} 
+<div class="page-header animate-in delay-1">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+            <h1>Manage Teams</h1>
+            <p class="page-subtitle">Assign users to different teams</p>
+        </div> 
+        <a href="{% url 'home' %}" class="btn-ghost"> 
+            <i class="bi bi-arrow-left"></i>Back 
+        </a>
+    </div>
+</div>
+<div class="glass-card animate-in delay-2" style="margin-bottom:1rem;">
+    <h2 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;margin-bottom:1rem;color:var(--text-primary);">Teams</h2>
+    <ul style="display:flex; flex-wrap:wrap; gap:0.5rem; padding:0; list-style:none; margin-bottom:1rem;">
+        {% for team in teams %}
+        <li>
+            <span class="team-tag">
+                {{ team.name }}
+                {% if team.name != "No Team" %}
+                <form method="POST" action="{% url 'delete_team' team.id %}" style="margin:0;display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="team-delete-btn" title="Delete team">×</button>
+                </form>
+                {% endif %}
+            </span>
+        </li>
+        {% empty %}
+        <li style="color:var(--text-muted);font-size:0.88rem;">No teams yet.</li>
+        {% endfor %}
+    </ul>
+
+    <form method="POST" action="{% url 'add_team' %}" style="display:flex; gap:0.5rem; align-items:center;">
+        {% csrf_token %}
+        <input type="text" name="team_name" placeholder="New team name" class="team-input" maxlength="30" required>
+        <button type="submit" class="btn-gradient" style="padding:0.35rem 0.85rem;font-size:0.82rem;border-radius:8px;">
+            <i class="bi bi-plus-lg"></i>Add
+        </button>
+    </form>
+</div>
+<div class="glass-card animate-in delay-3" style="padding:0;overflow:hidden;">
+    <table class="table-custom">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th style="width:160px;">Team</th>
+            </tr>
+        </thead>
+        <tbody> 
+            {% for user_profile in users %} 
+            <tr>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="user-chip-avatar" style="width:30px;height:30px;font-size:0.72rem;{% if user_profile.is_exec %}background:#b45309;{% endif %}">
+                            {{ user_profile.user.first_name|make_list|first|default:"?" }} 
+                        </div>
+                        <div>
+                            <div style="font-weight:600;font-size:0.9rem;"> 
+                                {{ user_profile.user.first_name }} {{ user_profile.user.last_name }} 
+                                {% if user_profile.user == request.user %}<span style="font-size:0.72rem;font-weight:500;color:var(--text-muted);"> (you)</span>{% endif %} 
+                            </div>
+                            <div style="font-size:0.75rem;color:var(--text-muted);">{{ user_profile.user.email }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="team-select-wrap"> 
+                        <select class="team-select-badge {{ user_profile.team.name}}" 
+                                data-url="{% url 'change_team' user_profile.user.id %}" 
+                                data-csrf="{{ csrf_token }}"> 
+                                {% for team in teams %} 
+                                    <option value="{{ team.id }}" {% if user_profile.team.id == team.id %}selected{% endif %}> {{ team.name }} </option> {% endfor %} 
+                        </select> 
+                    </div>
+                </td>
+            </tr> 
+            {% empty %} 
+            <tr>
+                <td colspan="2" style="text-align:center;padding:2.5rem;color:var(--text-muted);"> <i
+                        class="bi bi-people" style="font-size:2rem;display:block;margin-bottom:0.5rem;opacity:0.3;"></i>
+                        No users found. 
+                </td>
+            </tr> 
+            {% endfor %} 
+        </tbody>
+    </table>
+</div> 
+{% endblock %} 
+
+{% block extra_js %}
+<script> 
+    document.querySelectorAll('.team-select-badge').forEach(function (select) { 
+        select.addEventListener('change', function () { 
+            var url = this.dataset.url; 
+            var csrf = this.dataset.csrf; 
+            var team = this.value; 
+            var el = this; 
+
+            var body = new FormData(); 
+            body.append('team', team); 
+            body.append('csrfmiddlewaretoken', csrf); 
+
+            fetch(url, { 
+                method: 'POST', 
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }, 
+                body: body, 
+            })
+            .then(function (res) { return res.json(); })
+            .then(function (data) { 
+                if (data.ok) { 
+                    el.className = 'team-select-badge ' + data.team; 
+                } 
+            });
+        }); 
+    }); 
+</script>
+{% endblock %}
