@@ -100,12 +100,13 @@
         max-width: 100%;
         padding: 0.85rem 1rem;
         border-radius: 18px;
-        border: 1px solid var(--border-color);
-        background: var(--bg-card);
+        border: 1px solid rgba(59,130,246,0.18);
+        background: rgba(59,130,246,0.10);
     }
 
     .chat-bubble.self {
-        background: rgba(59,130,246,0.14);
+        background: rgba(59,130,246,0.18);
+        border-color: rgba(59,130,246,0.24);
     }
 
     .chat-text {
@@ -113,12 +114,6 @@
         word-break: break-word;
         line-height: 1.42;
         font-size: 0.98rem;
-    }
-
-    .chat-time {
-        margin-top: 0.35rem;
-        font-size: 0.72rem;
-        color: var(--text-muted);
     }
 
     .chat-input-bar {
@@ -883,6 +878,7 @@
                 var minuteKey = localMinuteKey(date);
                 var allSeps = messagesBox.querySelectorAll('.chat-time-separator');
                 var lastSep = allSeps.length ? allSeps[allSeps.length - 1] : null;
+
                 if (!lastSep || lastSep.getAttribute('data-time-minute') !== minuteKey) {
                     var sep = document.createElement('div');
                     sep.className = 'chat-time-separator';
@@ -894,12 +890,25 @@
                 var attachmentHtml = '';
                 if (msg.attachment_url) {
                     var lowerUrl = msg.attachment_url.toLowerCase();
-                    var isImage = lowerUrl.endsWith('.png') || lowerUrl.endsWith('.jpg') ||
-                                  lowerUrl.endsWith('.jpeg') || lowerUrl.endsWith('.gif') || lowerUrl.endsWith('.webp');
+                    var isImage =
+                        lowerUrl.endsWith('.png') ||
+                        lowerUrl.endsWith('.jpg') ||
+                        lowerUrl.endsWith('.jpeg') ||
+                        lowerUrl.endsWith('.gif') ||
+                        lowerUrl.endsWith('.webp');
+
                     if (isImage) {
-                        attachmentHtml = '<div class="mt-2"><img src="' + msg.attachment_url + '" alt="Attachment" class="chat-image" onclick="window.open(\'' + msg.attachment_url + '\', \'_blank\')"></div>';
+                        attachmentHtml =
+                            '<div class="mt-2">' +
+                                '<img src="' + msg.attachment_url + '" alt="Attachment" class="chat-image" onclick="window.open(\'' + msg.attachment_url + '\', \'_blank\')">' +
+                            '</div>';
                     } else {
-                        attachmentHtml = '<div class="mt-2"><a href="' + msg.attachment_url + '" target="_blank" class="btn btn-sm profile-action-btn"><i class="bi bi-paperclip me-1"></i>' + escapeHtml(msg.attachment_name) + '</a></div>';
+                        attachmentHtml =
+                            '<div class="mt-2">' +
+                                '<a href="' + msg.attachment_url + '" target="_blank" class="btn btn-sm profile-action-btn">' +
+                                    '<i class="bi bi-paperclip me-1"></i>' + escapeHtml(msg.attachment_name) +
+                                '</a>' +
+                            '</div>';
                     }
                 }
 
