@@ -13,9 +13,18 @@ import json
 @login_required
 def home(request):
     profile = request.user.profile
+    if profile.is_admin():
+        return redirect('admin_dashboard')
     if profile.is_exec():
         return redirect('exec_dashboard')
     return redirect('member_dashboard')
+
+
+@login_required
+def admin_dashboard(request):
+    if not request.user.profile.is_admin():
+        return redirect('home')
+    return render(request, 'admin_dashboard.html')
 
 @login_required
 def exec_dashboard(request):
@@ -31,6 +40,8 @@ def member_dashboard(request):
 
 @login_required
 def profile(request):
+    if request.user.profile.is_admin():
+        return redirect('admin_dashboard')
     return render(request, 'profile.html', {
         'profile': request.user.profile,
         'picture': '',
@@ -38,14 +49,14 @@ def profile(request):
 
 @login_required
 def manage_roles(request):
-    if not request.user.profile.is_exec():
+    if not request.user.profile.is_admin():
         return redirect('home')
-    users = UserProfile.objects.select_related('user').all()
+    users = UserProfile.objects.select_related('user', 'team').all()
     return render(request, 'manage_roles.html', {'users': users})
 
 @login_required
 def change_role(request, user_id):
-    if not request.user.profile.is_exec():
+    if not request.user.profile.is_admin():
         return redirect('home')
 
     if request.method == 'POST':
@@ -72,7 +83,7 @@ def manage_teams(request):
     if not request.user.profile.is_exec():
         return redirect('home')
     teams = Team.objects.all()
-    users = UserProfile.objects.select_related('user').all()
+    users = UserProfile.objects.select_related('user').exclude(role='admin')
     return render(request, 'manage_teams.html', {'users': users , 'teams': teams})
 
 @login_required
@@ -136,6 +147,8 @@ def delete_account(request):
 
 @login_required
 def tasks(request):
+    if request.user.profile.is_admin():
+        return redirect('admin_dashboard')
     team = request.user.profile.team
     from django.db.models import Q, Case, When, Value, IntegerField
  
@@ -167,7 +180,7 @@ def tasks(request):
         .order_by('-priority', 'name')
     )
  
-    team_members = User.objects.filter(profile__team=team)
+    team_members = User.objects.filter(profile__team=team).exclude(profile__role='admin')
     now = timezone.now()
  
     return render(request, 'tasks.html', {

@@ -23,11 +23,11 @@ def get_allowed_users(current_user):
     current_profile = current_user.profile
 
     if current_profile.is_exec():
-        return User.objects.exclude(pk=current_user.pk).select_related('profile')
+        return User.objects.exclude(pk=current_user.pk).exclude(profile__role='admin').select_related('profile')
 
     return User.objects.filter(
         profile__team=current_profile.team
-    ).exclude(pk=current_user.pk).select_related('profile')
+    ).exclude(pk=current_user.pk).exclude(profile__role='admin').select_related('profile')
 
 
 def _display_name(user):
@@ -51,6 +51,8 @@ def _avatar_letters(user):
 
 @login_required
 def message_list(request):
+    if request.user.profile.is_admin():
+        return redirect('admin_dashboard')
     conversation_qs = Conversation.objects.filter(
         Q(user1=request.user) | Q(user2=request.user)
     ).select_related('user1', 'user2').prefetch_related('messages').order_by('-updated_at')
@@ -270,6 +272,9 @@ def mark_read(request, conversation_id):
 @login_required
 def team_chat(request):
     profile = request.user.profile
+
+    if profile.is_admin():
+        return redirect('admin_dashboard')
 
     if not profile.team:
         messages.error(request, 'You are not assigned to a team.')
