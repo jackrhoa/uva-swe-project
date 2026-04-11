@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}Announcement History — CIO Manager{% endblock %}
+
+{% block extra_css %}
+<style>
+.history-page h2 {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 1.55rem;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #f1f5f9 0%, #94a3b8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0;
+}
+html[data-theme="light"] .history-page h2 {
+    background: linear-gradient(135deg, #0f172a 0%, #475569 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+/* ── Each announcement card ── */
+.ann-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--accent-2);
+    border-radius: 14px;
+    padding: 16px 20px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    animation: annSlideIn 0.3s ease both;
+}
+.ann-card:hover {
+    border-color: var(--border-hover);
+    border-left-color: var(--accent-2);
+    box-shadow: var(--glow-accent);
+}
+@keyframes annSlideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.ann-card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.ann-card-label {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.63rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.ann-card-date {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+.ann-card-body {
+    font-size: 0.9rem;
+    line-height: 1.65;
+    color: var(--text-secondary);
+}
+.ann-card-footer {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+.ann-target-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(139,92,246,.12);
+    border: 1px solid rgba(139,92,246,.25);
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 99px;
+    font-family: 'Outfit', sans-serif;
+}
+
+/* ── Stack of cards ── */
+.ann-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ── Empty state ── */
+.empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    border: 1px dashed var(--border-color);
+    border-radius: 14px;
+}
+.empty-state .empty-icon { display: block; font-size: 1.8rem; margin-bottom: 10px; }
+
+/* ── Back link ── */
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s;
+    margin-bottom: 20px;
+}
+.back-link:hover { color: var(--text-primary); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="history-page">
+
+    <a href="{% url 'home' %}" class="back-link animate-in delay-1">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+
+    <div class="d-flex align-items-center justify-content-between mb-4 animate-in delay-1">
+        <h2>Announcement History</h2>
+    </div>
+
+    <div class="ann-list">
+        {% for ann in announcements %}
+        <div class="ann-card" style="animation-delay: {{ forloop.counter0 }}00ms; animation-delay: calc({{ forloop.counter0 }} * 60ms);">
+            <div class="ann-card-meta">
+                <span class="ann-card-label">
+                    <i class="bi bi-megaphone-fill"></i> Announcement
+                </span>
+                <span class="ann-card-date">{{ ann.sent_at|date:"M j, Y · g:i a" }}</span>
+            </div>
+
+            <div class="ann-card-body">{{ ann.body }}</div>
+
+            <div class="ann-card-footer">
+                — {{ ann.sent_by.get_full_name|default:ann.sent_by.username }}
+                &nbsp;·&nbsp;
+                {% if ann.target == 'all' %}
+                    <span class="ann-target-chip"><i class="bi bi-globe2"></i> All Teams</span>
+                {% else %}
+                    {% for t in ann.target_teams.all %}
+                        <span class="ann-target-chip"><i class="bi bi-people-fill"></i> {{ t.name }}</span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <span class="empty-icon">📢</span>
+            No announcements yet.
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

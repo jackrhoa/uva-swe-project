@@ -5,7 +5,11 @@ from django.http import JsonResponse
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from .models import Team, UserProfile, Task
+from .models import (
+    Team, UserProfile, Task, Announcement,
+    get_announcement_for_user, get_announcements_for_user,
+    AttendanceSession, AttendanceAttempt,
+)
 from .forms import ProfileNameForm
 import json
 
@@ -21,13 +25,70 @@ def home(request):
 def exec_dashboard(request):
     if not request.user.profile.is_exec():
         return redirect('member_dashboard')
-    return render(request, 'exec_dashboard.html', {'profile': request.user.profile})
-
+ 
+    if request.method == 'POST':
+        body = request.POST.get('body', '').strip()
+        # team_ids is a list of selected team id strings, or ['__all__']
+        team_ids = request.POST.getlist('target_teams')
+ 
+        if body:
+            if '__all__' in team_ids:
+                ann = Announcement.objects.create(
+                    body=body,
+                    sent_by=request.user,
+                    target=Announcement.TARGET_ALL,
+                )
+                # target_teams stays empty — target='all' covers everyone
+            else:
+                ann = Announcement.objects.create(
+                    body=body,
+                    sent_by=request.user,
+                    target=Announcement.TARGET_SPECIFIC,
+                )
+                valid_ids = [tid for tid in team_ids if tid.isdigit()]
+                ann.target_teams.set(Team.objects.filter(id__in=valid_ids))
+ 
+        return redirect('exec_dashboard')
+ 
+    all_teams = Team.objects.all().order_by('name')
+    announcement = get_announcement_for_user(request.user)
+    active_session = AttendanceSession.get_active()
+ 
+    return render(request, 'exec_dashboard.html', {
+        'profile': request.user.profile,
+        'announcement': announcement,
+        'all_teams': all_teams,
+        'active_session': active_session,
+    })
+ 
 @login_required
 def member_dashboard(request):
     if request.user.profile.is_exec():
         return redirect('exec_dashboard')
-    return render(request, 'member_dashboard.html', {'profile': request.user.profile})
+ 
+    announcement = get_announcement_for_user(request.user)
+    active_session = AttendanceSession.get_active()
+
+    # Determine member's attendance status for the active session
+    member_checked_off = False
+    if active_session:
+        member_checked_off = active_session.attempts.filter(
+            user=request.user, success=True
+        ).exists()
+
+    return render(request, 'member_dashboard.html', {
+        'profile': request.user.profile,
+        'announcement': announcement,
+        'active_session': active_session,
+        'member_checked_off': member_checked_off,
+    })
+ 
+@login_required
+def announcement_history(request):
+    announcements = get_announcements_for_user(request.user)
+    return render(request, 'announcement_history.html', {
+        'announcements': announcements,
+    })
 
 @login_required
 def profile(request):
@@ -268,3 +329,189 @@ def edit_task(request, task_id):
         })
  
     return JsonResponse({'error': 'Invalid method'}, status=400)
+
+
+# ── Attendance views ──────────────────────────────────────────────────────────
+
+@login_required
+def attendance_generate(request):
+    """Exec only: generate a new code and make the session live."""
+    if not request.user.profile.is_exec():
+        return JsonResponse({'ok': False, 'error': 'Forbidden'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'ok': False}, status=405)
+
+    import random, string
+
+    # End any currently active session first
+    AttendanceSession.objects.filter(is_active=True).update(
+        is_active=False, ended_at=timezone.now()
+    )
+
+    code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    session = AttendanceSession.objects.create(
+        code=code,
+        is_active=True,
+        started_at=timezone.now(),
+        created_by=request.user,
+    )
+    return JsonResponse({'ok': True, 'code': code, 'session_id': session.id})
+
+
+@login_required
+def attendance_end(request):
+    """Exec only: end the active attendance session."""
+    if not request.user.profile.is_exec():
+        return JsonResponse({'ok': False, 'error': 'Forbidden'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'ok': False}, status=405)
+
+    AttendanceSession.objects.filter(is_active=True).update(
+        is_active=False, ended_at=timezone.now()
+    )
+    return JsonResponse({'ok': True})
+
+
+@login_required
+def attendance_submit(request):
+    """Member: submit an attendance code."""
+    if request.method != 'POST':
+        return JsonResponse({'ok': False}, status=405)
+
+    data = json.loads(request.body)
+    code_entered = data.get('code', '').strip().upper()
+
+    active_session = AttendanceSession.get_active()
+    if not active_session:
+        return JsonResponse({'ok': True, 'result': 'inactive'})
+
+    success = (code_entered == active_session.code)
+    AttendanceAttempt.objects.create(
+        session=active_session,
+        user=request.user,
+        code_entered=code_entered,
+        success=success,
+    )
+    return JsonResponse({'ok': True, 'result': 'success' if success else 'fail'})
+
+
+@login_required
+def attendance_status(request):
+    """
+    Polling endpoint used by both exec and member dashboards.
+    Returns whether a session is live and (for members) if they're checked off.
+    """
+    active_session = AttendanceSession.get_active()
+    if not active_session:
+        return JsonResponse({'is_active': False})
+
+    checked_off = active_session.attempts.filter(
+        user=request.user, success=True
+    ).exists()
+
+    return JsonResponse({
+        'is_active': True,
+        'code': active_session.code if request.user.profile.is_exec() else None,
+        'checked_off': checked_off,
+    })
+
+
+@login_required
+def attendance_records(request):
+    """Exec only: return attendance attempt records as JSON for the records table."""
+    if not request.user.profile.is_exec():
+        return JsonResponse({'ok': False, 'error': 'Forbidden'}, status=403)
+
+    team_filter = request.GET.get('team', '')   # team id or '' = all
+    result_filter = request.GET.get('result', 'all')  # 'all' | 'success' | 'fail'
+
+    qs = AttendanceAttempt.objects.select_related(
+        'user', 'user__profile', 'user__profile__team', 'session'
+    ).order_by('-submitted_at')
+
+    if team_filter and team_filter.isdigit():
+        qs = qs.filter(user__profile__team__id=team_filter)
+
+    if result_filter == 'success':
+        qs = qs.filter(success=True)
+    elif result_filter == 'fail':
+        qs = qs.filter(success=False)
+
+    rows = []
+    for attempt in qs:
+        u = attempt.user
+        name = u.get_full_name() or u.username
+        initial = (u.first_name[:1] or u.username[:1]).upper()
+        team_name = u.profile.team.name if hasattr(u, 'profile') else '—'
+        rows.append({
+            'initial': initial,
+            'name': name,
+            'team': team_name,
+            'date': attempt.submitted_at.strftime('%b %d, %Y'),
+            'time': attempt.submitted_at.strftime('%I:%M %p'),
+            'code': attempt.code_entered,
+            'result': 'success' if attempt.success else 'failed',
+        })
+
+    return JsonResponse({'ok': True, 'rows': rows})
+
+
+@login_required
+def attendance_records_page(request):
+    """Exec only: render the dedicated attendance records page."""
+    if not request.user.profile.is_exec():
+        return redirect('home')
+
+    all_teams = Team.objects.all().order_by('name')
+    return render(request, 'attendance_records.html', {
+        'profile': request.user.profile,
+        'all_teams': all_teams,
+        'selected_team': request.GET.get('team', ''),
+        'selected_result': request.GET.get('result', 'all'),
+    })
+
+
+@login_required
+def attendance_records_csv(request):
+    """Exec only: download filtered attendance records as a CSV file."""
+    import csv
+    from django.http import HttpResponse
+
+    if not request.user.profile.is_exec():
+        return redirect('home')
+
+    team_filter = request.GET.get('team', '')
+    result_filter = request.GET.get('result', 'all')
+
+    qs = AttendanceAttempt.objects.select_related(
+        'user', 'user__profile', 'user__profile__team', 'session'
+    ).order_by('-submitted_at')
+
+    if team_filter and team_filter.isdigit():
+        qs = qs.filter(user__profile__team__id=team_filter)
+
+    if result_filter == 'success':
+        qs = qs.filter(success=True)
+    elif result_filter == 'fail':
+        qs = qs.filter(success=False)
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="attendance_records.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Name', 'Team', 'Date', 'Time', 'Code Entered', 'Result'])
+
+    for attempt in qs:
+        u = attempt.user
+        name = u.get_full_name() or u.username
+        team_name = u.profile.team.name if hasattr(u, 'profile') else ''
+        writer.writerow([
+            name,
+            team_name,
+            attempt.submitted_at.strftime('%Y-%m-%d'),
+            attempt.submitted_at.strftime('%I:%M %p'),
+            attempt.code_entered,
+            'Success' if attempt.success else 'Failed',
+        ])
+
+    return response

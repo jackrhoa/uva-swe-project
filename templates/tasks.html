@@ -446,7 +446,9 @@ html[data-theme="light"] .task-deadline-badge.overdue {
     filter: invert(0.6);
     cursor: pointer;
 }
-
+.edit-deadline {
+    width: 180px;
+}
 /* user assignment */
 .user-assign-row {
     display: flex;
@@ -460,9 +462,9 @@ html[data-theme="light"] .task-deadline-badge.overdue {
     border: none;
     color: #fff;
     font-family: 'Outfit', sans-serif;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: 700;
-    padding: 8px 14px;
+    padding: 8px 30px;
     border-radius: 9px;
     cursor: pointer;
     white-space: nowrap;
@@ -621,7 +623,7 @@ html[data-theme="light"] .task-deadline-badge.overdue {
 
                         {# Priority badge #}
                         <span class="task-priority-badge" data-p="{{ task.priority|default:0 }}">
-                            {% if task.priority == 0 %}NEW
+                            {% if task.priority == 0 %}PENDING SETUP
                             {% elif task.priority == 1 %}LOW
                             {% elif task.priority == 2 %}MED
                             {% elif task.priority == 3 %}HIGH
@@ -690,7 +692,7 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                         <textarea class="edit-textarea edit-description">{{ task.description }}</textarea>
                     </div>
                     <div>
-                        <label class="field-label">Total actions</label>
+                        <label class="field-label">Quota (If  not applicable, leave as 1)</label>
                         <input class="edit-input edit-total-actions" type="number" value="{{ task.total_actions }}" min="1">
                     </div>
                     <div>
@@ -717,7 +719,7 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                                         data-name="{{ team_name }} (Everyone)"
                                         data-initial="ALL"
                                         data-is-team="true">
-                                    👥 {{ team_name }} (Everyone)
+                                    👥 {{ team_name }} (Everyone In Team)
                                 </option>
                                 {% for member in team_members %}
                                 <option value="{{ member.id }}"
@@ -776,7 +778,7 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                             {% endif %}
 
                             <span class="task-priority-badge" data-p="{{ task.priority|default:0 }}">
-                                {% if task.priority == 0 %}NEW
+                                {% if task.priority == 0 %}PENDING SETUP
                                 {% elif task.priority == 1 %}LOW
                                 {% elif task.priority == 2 %}MED
                                 {% elif task.priority == 3 %}HIGH
@@ -909,7 +911,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Priority label map
-    const PRIORITY_LABELS = { 0: 'NEW', 1: 'LOW', 2: 'MED', 3: 'HIGH', 4: 'URGENT' };
+    const PRIORITY_LABELS = { 0: 'PENDING SETUP', 1: 'LOW', 2: 'MED', 3: 'HIGH', 4: 'URGENT' };
 
     // ── Completed section toggle ──
     const toggle = document.getElementById('completedToggle');
