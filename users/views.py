@@ -40,11 +40,12 @@ def member_dashboard(request):
 
 @login_required
 def profile(request):
-    if request.user.profile.is_admin():
+    prof = request.user.profile
+    if prof.is_admin():
         return redirect('admin_dashboard')
     return render(request, 'profile.html', {
-        'profile': request.user.profile,
-        'picture': '',
+        'profile': prof,
+        'picture': prof.avatar.url if prof.avatar else '',
     })
 
 @login_required
@@ -128,11 +129,19 @@ def edit_profile(request):
         form = ProfileNameForm(request.POST, instance=request.user)
         if form.is_valid():
             form.save()
-            return redirect('profile')
+        avatar_file = request.FILES.get('avatar')
+        if avatar_file:
+            prof = request.user.profile
+            prof.avatar = avatar_file
+            prof.save()
+        return redirect('profile')
     else:
         form = ProfileNameForm(instance=request.user)
 
-    return render(request, 'edit_profile.html', {'form': form})
+    return render(request, 'edit_profile.html', {
+        'form': form,
+        'profile': request.user.profile,
+    })
 
 @login_required
 def delete_account(request):
