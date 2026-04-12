@@ -398,9 +398,13 @@
                          data-utc="{{ message.created_at.isoformat }}"
                          data-message-id="{{ message.id }}">
                         {% if not message.sender == request.user %}
-                            <div class="chat-avatar">
+                            <div class="chat-avatar" style="padding:0;overflow:hidden;">
                                 {% if message.sender %}
-                                    {{ message.sender.first_name|slice:":1" }}{{ message.sender.last_name|slice:":1" }}
+                                    {% if message.sender.profile.avatar %}
+                                        <img src="{{ message.sender.profile.avatar.url }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">
+                                    {% else %}
+                                        {{ message.sender.first_name|slice:":1" }}{{ message.sender.last_name|slice:":1" }}
+                                    {% endif %}
                                 {% else %}
                                     ?
                                 {% endif %}
@@ -594,7 +598,10 @@
             var senderHtml = '';
 
             if (!message.is_self) {
-                avatarHtml = '<div class="chat-avatar">' + escapeHtml(message.sender_initials || '?') + '</div>';
+                var avatarContent = message.sender_avatar_url
+                    ? '<img src="' + message.sender_avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">'
+                    : escapeHtml(message.sender_initials || '?');
+                avatarHtml = '<div class="chat-avatar" style="padding:0;overflow:hidden;">' + avatarContent + '</div>';
                 senderHtml = '<div class="chat-sender">' + escapeHtml(message.sender_name || 'Unknown User') + '</div>';
             }
 
