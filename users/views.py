@@ -560,8 +560,7 @@ def attendance_records(request):
             'initial': initial,
             'name': name,
             'team': team_name,
-            'date': attempt.submitted_at.strftime('%b %d, %Y'),
-            'time': attempt.submitted_at.strftime('%I:%M %p'),
+            'submitted_at': attempt.submitted_at.isoformat(),
             'code': attempt.code_entered,
             'result': 'success' if attempt.success else 'failed',
         })
@@ -643,9 +642,16 @@ def attendance_records_csv(request):
     """Exec only: download filtered attendance records as a CSV file."""
     import csv
     from django.http import HttpResponse
+    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
     if not request.user.profile.is_exec():
         return redirect('home')
+
+    tz_name = request.GET.get('tz', 'UTC')
+    try:
+        tz = ZoneInfo(tz_name)
+    except (ZoneInfoNotFoundError, KeyError):
+        tz = ZoneInfo('America/New_York')
 
     team_filter = request.GET.get('team', '')
     result_filter = request.GET.get('result', 'all')
@@ -672,11 +678,12 @@ def attendance_records_csv(request):
         u = attempt.user
         name = u.get_full_name() or u.username
         team_name = u.profile.team.name if hasattr(u, 'profile') else ''
+        local_dt = attempt.submitted_at.astimezone(tz)
         writer.writerow([
             name,
             team_name,
-            attempt.submitted_at.strftime('%Y-%m-%d'),
-            attempt.submitted_at.strftime('%I:%M %p'),
+            local_dt.strftime('%Y-%m-%d'),
+            local_dt.strftime('%I:%M %p'),
             attempt.code_entered,
             'Success' if attempt.success else 'Failed',
         ])
