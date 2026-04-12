@@ -107,12 +107,30 @@
     html[data-theme="light"] .person-option.active {
         background: rgba(59,130,246,0.1);
     }
+x    .page-wrapper { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+
     .chat-shell {
-        height: 620px;
+        height: calc(100vh - 72px);
+        align-items: stretch;
+    }
+
+    .left-panel-col {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .conversations-card {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
     }
 
     .conversation-list {
-        max-height: 470px;
+        flex: 1;
+        max-height: none;
         overflow-y: auto;
     }
 
@@ -144,7 +162,7 @@
         flex-direction: column;
         gap: 0.75rem;
         min-height: 320px;
-        max-height: 390px;
+        max-height: none;
     }
 
     .chat-time-separator {
@@ -580,13 +598,8 @@
 {% endblock %}
 
 {% block content %}
-<div class="page-header animate-in delay-1">
-    <h1>Messages</h1>
-    <p class="page-subtitle">Send direct messages and share files</p>
-</div>
-
 <div class="row g-3 chat-shell">
-    <div class="col-lg-4 animate-in delay-2">
+    <div class="col-lg-4 animate-in delay-1 left-panel-col">
         <div class="glass-card mb-3 start-conversation-card">
             <h2>Start Conversation</h2>
             {% if not is_exec %}
@@ -594,7 +607,7 @@
             {% endif %}
             <form method="post" action="{% url 'start_conversation' %}">
                 {% csrf_token %}
-                <div class="start-select">
+                <div>
                     {# hidden select so the form posts the right value #}
                     <div style="display:none">{{ start_form.recipient }}</div>
                     <div class="person-search-wrap">
@@ -606,13 +619,10 @@
                         <div class="person-dropdown" id="person-dropdown"></div>
                     </div>
                 </div>
-                <button type="submit" class="btn-gradient">
-                    <i class="bi bi-plus-circle"></i>Open Chat
-                </button>
             </form>
         </div>
 
-        <div class="glass-card">
+        <div class="glass-card conversations-card">
             <h2>Conversations</h2>
             <div class="d-flex flex-column gap-2 conversation-list" id="conversation-list">
                 {% for item in conversations %}
@@ -630,7 +640,10 @@
                                 {% endif %}
                             {% endwith %}
                             <div style="flex:1;min-width:0;">
-                                <div class="tool-label">{{ item.other_user.first_name }} {{ item.other_user.last_name }}</div>
+                                <div class="tool-label">
+                                    {{ item.other_user.first_name }} {{ item.other_user.last_name }}
+                                    {% if is_exec and item.other_user.profile.team %}<span style="font-size:0.75rem;font-weight:500;color:#60a5fa;">({{ item.other_user.profile.team.name }})</span>{% endif %}
+                                </div>
                                 {% if item.last_message %}
                                     {% if item.last_message.is_deleted %}
                                         <div class="tool-desc conversation-preview" data-last-message-id="{{ item.last_message.id }}">This message was deleted</div>
@@ -658,8 +671,8 @@
         </div>
     </div>
 
-    <div class="col-lg-8 animate-in delay-3">
-        <div class="glass-card chat-panel">
+    <div class="col-lg-8 animate-in delay-2" style="height:100%;">
+        <div class="glass-card chat-panel" style="height:100%;">
             {% if active_conversation %}
                 {% if active_other_user %}
                     <h2>Chat with {{ active_other_user.first_name }} {{ active_other_user.last_name }}</h2>
@@ -828,6 +841,9 @@
                 hiddenSelect.value = value;
                 searchInput.value = label;
                 dropdown.classList.remove('open');
+                // Auto-submit the form immediately when a person is selected
+                var form = searchInput.closest('form');
+                if (form) form.submit();
             }
 
             function highlight(index) {
@@ -1252,7 +1268,17 @@
 
         window._appendMessage = appendMessage;
         window._updatePreviewForDeletion = updatePreviewForDeletion;
-        scrollToBottom();
+
+        // Scroll to bottom immediately, then again after any images finish loading
+        // so that unloaded avatars/attachments don't cause an underestimated scrollHeight.
+        requestAnimationFrame(function() {
+            scrollToBottom();
+            if (messagesBox) {
+                messagesBox.querySelectorAll('img').forEach(function(img) {
+                    if (!img.complete) img.addEventListener('load', scrollToBottom);
+                });
+            }
+        });
 
     })();
 </script>

@@ -9,6 +9,8 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
+from users.models import Team
+from users.models import get_default_team
 from .forms import MessageForm, StartConversationForm, TeamMessageForm
 from .models import (
     Conversation,
@@ -21,13 +23,25 @@ from .models import (
 
 def get_allowed_users(current_user):
     current_profile = current_user.profile
+    no_team_id = get_default_team()
 
     if current_profile.is_exec():
-        return User.objects.exclude(pk=current_user.pk).exclude(profile__role='admin').select_related('profile')
+        return (
+            User.objects
+            .exclude(pk=current_user.pk)
+            .exclude(profile__role='admin')
+            .exclude(profile__team_id=no_team_id)
+            .select_related('profile')
+        )
 
-    return User.objects.filter(
-        profile__team=current_profile.team
-    ).exclude(pk=current_user.pk).exclude(profile__role='admin').select_related('profile')
+    return (
+        User.objects
+        .filter(profile__team=current_profile.team)
+        .exclude(pk=current_user.pk)
+        .exclude(profile__role='admin')
+        .exclude(profile__team_id=no_team_id)
+        .select_related('profile')
+    )
 
 
 def _display_name(user):
@@ -66,7 +80,9 @@ def message_list(request):
         return redirect('admin_dashboard')
     conversation_qs = Conversation.objects.filter(
         Q(user1=request.user) | Q(user2=request.user)
-    ).select_related('user1', 'user2').prefetch_related('messages').order_by('-updated_at')
+    ).select_related('user1', 'user1__profile', 'user1__profile__team',
+                      'user2', 'user2__profile', 'user2__profile__team',
+                      ).prefetch_related('messages').order_by('-updated_at')
 
     active_conversation = None
     active_other_user = None
@@ -288,19 +304,59 @@ def team_chat(request):
     if profile.is_admin():
         return redirect('admin_dashboard')
 
-    if not profile.team:
-        messages.error(request, 'You are not assigned to a team.')
-        return redirect('home')
+    is_exec = profile.is_exec()
+    no_team_id = get_default_team()
 
-    team_conversation, created = TeamConversation.objects.get_or_create(team=profile.team)
+    # Execs can view any team via ?team=<id>; default to their own team if it's real,
+    # otherwise fall back to the first available real team
+    if is_exec:
+        if request.GET.get('team'):
+            team = get_object_or_404(Team, id=request.GET.get('team'))
+        elif profile.team and profile.team.id != no_team_id:
+            team = profile.team
+        else:
+            team = Team.objects.exclude(id=no_team_id).order_by('name').first()
+            if not team:
+                messages.error(request, 'No teams exist yet.')
+                return redirect('home')
+    else:
+        team = profile.team
+        if not team or team.id == no_team_id:
+            messages.error(request, 'You are not assigned to a team.')
+            return redirect('home')
+
+    team_conversation, created = TeamConversation.objects.get_or_create(team=team)
     team_messages = team_conversation.messages.select_related('sender').order_by('created_at')
     form = TeamMessageForm()
 
+    all_teams = None
+    if is_exec:
+        teams_qs = Team.objects.exclude(id=no_team_id).order_by('name')
+        # Fetch last non-deleted message per team conversation in bulk
+        team_ids = list(teams_qs.values_list('id', flat=True))
+        last_msgs = {}
+        for tc in TeamConversation.objects.filter(team_id__in=team_ids).prefetch_related(
+            'messages__sender'
+        ):
+            last = tc.messages.filter(is_deleted=False).order_by('-id').first()
+            last_msgs[tc.team_id] = last
+
+        all_teams = []
+        for t in teams_qs:
+            last_msg = last_msgs.get(t.id)
+            all_teams.append({
+                'team': t,
+                'last_message': last_msg,
+            })
+
     context = {
-        'team': profile.team,
+        'team': team,
+        'user_team': profile.team,
         'team_conversation': team_conversation,
         'team_messages': team_messages,
         'message_form': form,
+        'is_exec': is_exec,
+        'all_teams': all_teams,
     }
     return render(request, 'team_chat.html', context)
 
@@ -327,6 +383,8 @@ def delete_team_message(request, message_id):
 
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'ok': True})
+        if request.user.profile.is_exec():
+            return redirect(f'/messages/team/?team={team_conversation.team_id}')
         return redirect('team_chat')
 
     return JsonResponse({'ok': False}, status=405)
@@ -336,11 +394,15 @@ def delete_team_message(request, message_id):
 def send_team_message(request, team_conversation_id):
     profile = request.user.profile
 
-    team_conversation = get_object_or_404(
-        TeamConversation,
-        id=team_conversation_id,
-        team=profile.team
-    )
+    # Execs can send to any team; members can only send to their own team
+    if profile.is_exec():
+        team_conversation = get_object_or_404(TeamConversation, id=team_conversation_id)
+    else:
+        team_conversation = get_object_or_404(
+            TeamConversation,
+            id=team_conversation_id,
+            team=profile.team
+        )
 
     if request.method == 'POST':
         form = TeamMessageForm(request.POST, request.FILES)
@@ -386,6 +448,8 @@ def send_team_message(request, team_conversation_id):
                     }
                 })
 
+            if profile.is_exec():
+                return redirect(f'/messages/team/?team={team_conversation.team_id}')
             return redirect('team_chat')
 
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':

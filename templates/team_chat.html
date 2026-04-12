@@ -4,8 +4,158 @@
 
 {% block extra_css %}
 <style>
+    /* ── Team search autocomplete (exec only) ───────── */
+    .team-search-wrap {
+        position: relative;
+        margin-bottom: 1rem;
+    }
+
+    .team-search-input {
+        width: 100%;
+        background: transparent !important;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 0.5rem 0.9rem;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        outline: none;
+        transition: border-color 0.15s;
+    }
+
+    .team-search-input:focus {
+        border-color: var(--border-hover);
+    }
+
+    .team-search-input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .team-dropdown {
+        display: none;
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0; right: 0;
+        background: var(--bg-card-solid);
+        border: 1px solid var(--border-hover);
+        border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        z-index: 999;
+        overflow: hidden;
+        max-height: 220px;
+        overflow-y: auto;
+    }
+
+    .team-dropdown.open { display: block; }
+
+    .team-option {
+        padding: 0.55rem 0.9rem;
+        font-size: 0.93rem;
+        color: var(--text-primary);
+        cursor: pointer;
+        user-select: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .team-option:hover,
+    .team-option.active {
+        background: rgba(59,130,246,0.15);
+    }
+
+    .team-option .team-name { font-weight: 500; }
+
+    .team-badge-own {
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 0.1rem 0.45rem;
+        border-radius: 999px;
+        background: rgba(59,130,246,0.15);
+        color: #60a5fa;
+        white-space: nowrap;
+    }
+
+    html[data-theme="light"] .team-dropdown {
+        background: #fff;
+        border-color: rgba(0,0,0,0.12);
+    }
+
+    html[data-theme="light"] .team-option:hover,
+    html[data-theme="light"] .team-option.active {
+        background: rgba(59,130,246,0.1);
+    }
+
+    .team-no-results {
+        padding: 0.55rem 0.9rem;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+    }
+
+    .page-wrapper { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+
+    .chat-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding-bottom: 0.85rem;
+        margin-bottom: 0.85rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .chat-header-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: rgba(59,130,246,0.14);
+        border: 1px solid rgba(59,130,246,0.22);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #60a5fa;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+
+    .chat-header-text { min-width: 0; }
+
+    .chat-header-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .chat-header-sub {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: 0.05rem;
+    }
+
     .chat-shell {
-        height: 620px;
+        height: calc(100vh - 72px);
+        align-items: stretch;
+    }
+
+    .left-panel-col {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .team-list-card {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .team-list {
+        flex: 1;
+        overflow-y: auto;
     }
 
     .chat-panel {
@@ -22,7 +172,7 @@
         flex-direction: column;
         gap: 0.75rem;
         min-height: 320px;
-        max-height: 430px;
+        max-height: none;
     }
 
     .chat-time-separator {
@@ -426,16 +576,72 @@
 {% endblock %}
 
 {% block content %}
-<div class="page-header animate-in delay-1">
-    <h1>Team Chat</h1>
-    <p class="page-subtitle">Chat with members of {{ team.name }}</p>
-</div>
+{% if is_exec and all_teams %}
+<div class="row g-3 chat-shell">
 
+    {# ── Exec: left sidebar team selector ── #}
+    <div class="col-lg-4 animate-in delay-1 left-panel-col">
+        <div class="glass-card mb-3 start-conversation-card">
+            <h2>Team Chats</h2>
+            <div class="team-search-wrap">
+                <input type="text"
+                       id="team-search-input"
+                       class="team-search-input"
+                       placeholder="Search teams..."
+                       autocomplete="off">
+                <div class="team-dropdown" id="team-dropdown"></div>
+            </div>
+        </div>
+        <div class="glass-card team-list-card">
+            <h2>Teams</h2>
+            <div class="d-flex flex-column gap-2 team-list">
+                {% for item in all_teams %}
+                    <a href="/messages/team/?team={{ item.team.id }}"
+                       class="tool-item {% if item.team.id == team.id %}profile-action-btn{% endif %}">
+                        <div class="tool-icon blue"><i class="bi bi-people-fill"></i></div>
+                        <div style="flex:1;min-width:0;">
+                            <div class="tool-label">
+                                {{ item.team.name }}{% if user_team and item.team.id == user_team.id %} <span style="font-size:0.75rem;font-weight:500;color:#60a5fa;">(My Team)</span>{% endif %}
+                            </div>
+                            {% if item.last_message %}
+                                <div class="tool-desc">
+                                    {% if item.last_message.sender == request.user %}You{% else %}{{ item.last_message.sender.first_name }}{% endif %}:
+                                    {% if item.last_message.content %}{{ item.last_message.content|truncatechars:22 }}{% else %}sent an attachment{% endif %}
+                                </div>
+                            {% else %}
+                                <div class="tool-desc">No messages yet</div>
+                            {% endif %}
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {# ── Exec: right chat panel ── #}
+    <div class="col-lg-8 animate-in delay-2" style="height:100%;">
+        <div class="glass-card chat-panel" style="height:100%;">
+            <div class="chat-header">
+                <div class="chat-header-icon"><i class="bi bi-people-fill"></i></div>
+                <div class="chat-header-text">
+                    <div class="chat-header-title">{{ team.name }}</div>
+                    <div class="chat-header-sub">Shared team chat</div>
+                </div>
+            </div>
+
+{% else %}
 <div class="row justify-content-center chat-shell">
-    <div class="col-lg-9 animate-in delay-2">
-        <div class="glass-card chat-panel">
-            <h2>{{ team.name }}</h2>
-            <div class="tool-desc mb-3">Shared chat for your team</div>
+    <div class="col-lg-9 animate-in delay-1" style="height:100%;">
+        <div class="glass-card chat-panel" style="height:100%;">
+            <div class="chat-header">
+                <div class="chat-header-icon"><i class="bi bi-people-fill"></i></div>
+                <div class="chat-header-text">
+                    <div class="chat-header-title">{{ team.name }}</div>
+                    <div class="chat-header-sub">Shared chat for your team</div>
+                </div>
+            </div>
+
+{% endif %}
 
             <div class="chat-messages" id="chat-messages">
                 {% for message in team_messages %}
@@ -556,10 +762,101 @@
             </div>
         </div>
     </div>
-</div>
+</div>{# close row #}
 {% endblock %}
 
 {% block extra_js %}
+{% if is_exec and all_teams %}
+<script>
+    (function () {
+        var searchInput = document.getElementById('team-search-input');
+        var dropdown = document.getElementById('team-dropdown');
+        if (!searchInput || !dropdown) return;
+
+        // Parse team options from inline data
+        var options = [];
+        {% for item in all_teams %}
+        options.push({ id: {{ item.team.id }}, name: "{{ item.team.name|escapejs }}", isOwn: {% if item.team.id == user_team.id %}true{% else %}false{% endif %} });
+        {% endfor %}
+
+        var activeIndex = -1;
+
+        function render(filtered) {
+            if (!filtered.length) {
+                dropdown.innerHTML = '<div class="team-no-results">No teams found</div>';
+            } else {
+                dropdown.innerHTML = filtered.map(function(o, i) {
+                    var badge = o.isOwn ? '<span class="team-badge-own">My Team</span>' : '';
+                    return '<div class="team-option" data-id="' + o.id + '" data-index="' + i + '">' +
+                           '<span class="team-name">' + o.name + '</span>' + badge +
+                           '</div>';
+                }).join('');
+            }
+            activeIndex = -1;
+            dropdown.classList.add('open');
+        }
+
+        function navigate(teamId) {
+            window.location.href = '/messages/team/?team=' + teamId;
+        }
+
+        function highlight(index) {
+            var items = dropdown.querySelectorAll('.team-option');
+            items.forEach(function(el) { el.classList.remove('active'); });
+            if (items[index]) {
+                items[index].classList.add('active');
+                items[index].scrollIntoView({ block: 'nearest' });
+            }
+            activeIndex = index;
+        }
+
+        function filterAndRender() {
+            var q = searchInput.value.toLowerCase();
+            var filtered = q
+                ? options.filter(function(o) { return o.name.toLowerCase().includes(q); })
+                : options;
+            render(filtered);
+        }
+
+        searchInput.addEventListener('focus', function() {
+            render(options);
+        });
+
+        searchInput.addEventListener('input', filterAndRender);
+
+        searchInput.addEventListener('keydown', function(e) {
+            var items = dropdown.querySelectorAll('.team-option');
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                highlight(Math.min(activeIndex + 1, items.length - 1));
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                highlight(Math.max(activeIndex - 1, 0));
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (items[activeIndex]) navigate(items[activeIndex].dataset.id);
+            } else if (e.key === 'Escape') {
+                dropdown.classList.remove('open');
+                searchInput.value = '';
+            }
+        });
+
+        dropdown.addEventListener('mousedown', function(e) {
+            var opt = e.target.closest('.team-option');
+            if (!opt) return;
+            e.preventDefault();
+            navigate(opt.dataset.id);
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.remove('open');
+                searchInput.value = '';
+            }
+        });
+    })();
+</script>
+{% endif %}
 <script>
     (function () {
         var attachmentInput = document.getElementById('id_attachment');
@@ -908,7 +1205,16 @@
             confirmPopup.style.left = Math.max(4, Math.min(left, window.innerWidth - pw - 4)) + 'px';
         });
 
-        scrollToBottom();
+        // Scroll to bottom immediately, then again after any images finish loading
+        // so that unloaded avatars/attachments don't cause an underestimated scrollHeight.
+        requestAnimationFrame(function() {
+            scrollToBottom();
+            if (messagesBox) {
+                messagesBox.querySelectorAll('img').forEach(function(img) {
+                    if (!img.complete) img.addEventListener('load', scrollToBottom);
+                });
+            }
+        });
     })();
 </script>
 <script>
