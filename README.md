@@ -6,3 +6,10 @@ cd project-a-20
 ```
 
 CIO Manger - Communicate with your CIO members, take attendance automatically, and more!
+
+
+To start server, run:
+
+`.venv/bin/uvicorn config.asgi:application --host 127.0.0.1 --port 8000 --reload`
+
+And visit localhost:8000 to access

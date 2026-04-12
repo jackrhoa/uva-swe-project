@@ -19,7 +19,11 @@
         <div class="glass-card">
             <div class="d-flex align-items-center gap-3 mb-4 pb-3" style="border-bottom:1px solid var(--border-color);">
                 {% if picture %}
-                    <img src="{{ picture }}" alt="Profile Picture" class="profile-avatar">
+                    <img src="{{ picture }}" alt="Profile Picture" class="profile-avatar"
+                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                    <div class="profile-avatar-placeholder" style="display:none;">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
                 {% else %}
                     <div class="profile-avatar-placeholder">
                         <i class="bi bi-person-fill"></i>
@@ -35,7 +39,7 @@
                     </span>
                 </div>
                 <a href="{% url 'edit_profile' %}" class="btn btn-sm profile-action-btn">
-                    <i class="bi bi-pencil-square me-1"></i>Edit Name
+                    <i class="bi bi-pencil-square me-1"></i>Edit Profile
                 </a>
                 
             </div>
