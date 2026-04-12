@@ -48,6 +48,8 @@ def exec_dashboard(request):
                     target=Announcement.TARGET_ALL,
                 )
                 # target_teams stays empty — target='all' covers everyone
+                from .notifications import notify_announcement
+                notify_announcement(ann)     
             else:
                 ann = Announcement.objects.create(
                     body=body,
@@ -56,6 +58,8 @@ def exec_dashboard(request):
                 )
                 valid_ids = [tid for tid in team_ids if tid.isdigit()]
                 ann.target_teams.set(Team.objects.filter(id__in=valid_ids))
+                from .notifications import notify_announcement
+                notify_announcement(ann)
  
         return redirect('exec_dashboard')
  
@@ -344,6 +348,11 @@ def edit_task(request, task_id):
             task.actions_completed = max(0, min(int(data['actions_completed']), task.total_actions))
  
         task.save()
+
+        # ── email if just completed ──────────────────────────────
+        if task.actions_completed >= task.total_actions:
+            from .notifications import notify_task_completed
+            notify_task_completed(task)
  
         return JsonResponse({
             'name':              task.name,
