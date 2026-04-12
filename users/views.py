@@ -129,11 +129,14 @@ def edit_profile(request):
         form = ProfileNameForm(request.POST, instance=request.user)
         if form.is_valid():
             form.save()
-        avatar_file = request.FILES.get('avatar')
-        if avatar_file:
-            prof = request.user.profile
-            prof.avatar = avatar_file
-            prof.save()
+        prof = request.user.profile
+        if request.POST.get('remove_avatar'):
+            prof.avatar.delete(save=True)
+        else:
+            avatar_file = request.FILES.get('avatar')
+            if avatar_file:
+                prof.avatar = avatar_file
+                prof.save()
         return redirect('profile')
     else:
         form = ProfileNameForm(instance=request.user)

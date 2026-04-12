@@ -31,6 +31,11 @@
                         <i class="bi bi-camera-fill me-1"></i>Change Photo
                     </label>
                     <input type="file" name="avatar" id="id_avatar" accept="image/*" style="display:none;">
+                    {% if profile.avatar %}
+                    <button type="submit" name="remove_avatar" value="1" class="btn btn-sm" style="background:transparent;border:1px solid var(--danger,#ef4444);color:var(--danger,#ef4444);border-radius:8px;padding:0.3rem 0.8rem;font-size:0.82rem;margin-left:0.4rem;">
+                        <i class="bi bi-trash3 me-1"></i>Remove
+                    </button>
+                    {% endif %}
                 </div>
 
                 <div class="mb-3">

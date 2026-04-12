@@ -1058,7 +1058,13 @@
                         </button>
                         <div class="dropdown user-chip-dropdown d-none d-md-flex">
                             <div class="user-chip" data-bs-toggle="dropdown" aria-expanded="false">
-                                <div class="user-chip-avatar">{{ request.user.first_name|make_list|first|default:"?" }}</div>
+                                <div class="user-chip-avatar">
+                                    {% if request.user.profile.avatar %}
+                                        <img src="{{ request.user.profile.avatar.url }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">
+                                    {% else %}
+                                        {{ request.user.first_name|make_list|first|default:"?" }}
+                                    {% endif %}
+                                </div>
                                 <span class="user-chip-name">{{ request.user.first_name }}</span>
                             </div>
                             <ul class="dropdown-menu dropdown-menu-end">
