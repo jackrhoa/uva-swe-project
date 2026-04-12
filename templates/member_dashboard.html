@@ -571,6 +571,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
+function showNoAnnouncementsPlaceholder() {
+    const section = document.getElementById('announcements-section');
+    if (!section) return;
+    section.innerHTML = `
+        <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <div>
+                <div style="font-family:'Outfit',sans-serif;font-size:0.82rem;font-weight:600;color:var(--text-secondary);margin-bottom:2px;">
+                    <i class="bi bi-megaphone me-1" style="color:var(--text-muted);"></i> No unread announcements
+                </div>
+                <div style="font-size:0.75rem;color:var(--text-muted);">New announcements will appear here until marked as read.</div>
+            </div>
+            <a href="{% url 'announcement_history' %}" style="font-family:'Outfit',sans-serif;font-size:0.72rem;font-weight:600;color:var(--text-muted);text-decoration:none;white-space:nowrap;">
+                <i class="bi bi-clock-history"></i> View all announcements
+            </a>
+        </div>`;
+}
+
 function markRead(id) {
     fetch(`/announcements/mark-read/${id}/`, {
         method: 'POST',
@@ -584,7 +601,7 @@ function markRead(id) {
                 card.remove();
                 const list = document.getElementById('unread-ann-list');
                 if (list && list.children.length === 0) {
-                    document.getElementById('announcements-section').remove();
+                    showNoAnnouncementsPlaceholder();
                 }
             }, 300);
         }
@@ -595,6 +612,16 @@ function markAllRead() {
     fetch('/announcements/mark-all-read/', {
         method: 'POST',
         headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+    }).then(() => {
+        const list = document.getElementById('unread-ann-list');
+        if (list) {
+            const cards = list.querySelectorAll('.ann-unread-card');
+            cards.forEach(card => {
+                card.style.transition = 'opacity 0.3s';
+                card.style.opacity = '0';
+            });
+            setTimeout(() => showNoAnnouncementsPlaceholder(), 320);
+        }
     });
 }
 </script>
