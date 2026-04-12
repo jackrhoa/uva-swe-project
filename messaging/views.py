@@ -9,8 +9,7 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
-from users.models import Team
-from users.models import get_default_team
+from users.models import Team, get_default_team, Announcement, AnnouncementRead
 from .forms import MessageForm, StartConversationForm, TeamMessageForm
 from .models import (
     Conversation,
@@ -326,7 +325,35 @@ def team_chat(request):
             return redirect('home')
 
     team_conversation, created = TeamConversation.objects.get_or_create(team=team)
-    team_messages = team_conversation.messages.select_related('sender').order_by('created_at')
+
+    raw_messages = team_conversation.messages.select_related(
+        'sender', 'sender__profile'
+    ).order_by('created_at')
+    message_items = [
+        {'type': 'message', 'sort_at': msg.created_at, 'obj': msg}
+        for msg in raw_messages
+    ]
+
+    team_announcements = (
+        Announcement.objects
+        .filter(
+            Q(target=Announcement.TARGET_ALL)
+            | Q(target=Announcement.TARGET_SPECIFIC, target_teams=team)
+        )
+        .select_related('sent_by')
+        .distinct()
+        .order_by('sent_at')
+    )
+    announcement_items = [
+        {'type': 'announcement', 'sort_at': ann.sent_at, 'obj': ann}
+        for ann in team_announcements
+    ]
+
+    timeline_items = sorted(
+        message_items + announcement_items,
+        key=lambda item: item['sort_at']
+    )
+
     form = TeamMessageForm()
 
     all_teams = None
@@ -349,14 +376,21 @@ def team_chat(request):
                 'last_message': last_msg,
             })
 
+    read_ann_ids = set(
+        AnnouncementRead.objects
+        .filter(user=request.user)
+        .values_list('announcement_id', flat=True)
+    )
+
     context = {
         'team': team,
         'user_team': profile.team,
         'team_conversation': team_conversation,
-        'team_messages': team_messages,
+        'timeline_items': timeline_items,
         'message_form': form,
         'is_exec': is_exec,
         'all_teams': all_teams,
+        'read_ann_ids': read_ann_ids,
     }
     return render(request, 'team_chat.html', context)
 

@@ -1,0 +1,519 @@
+{% extends "base.html" %}
+{% block title %}Live Attendance — CIO Manager{% endblock %}
+{% block nav_attendance %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Page heading ── */
+.attendance-page h2 {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 1.55rem;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+    margin-bottom: 0;
+}
+
+/* ── View Records button ── */
+.records-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent-2);
+    color: #fff;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 8px 18px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+.records-btn:hover {
+    background: #2563eb;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(59,130,246,.3);
+}
+
+/* ── Code display ── */
+.code-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 48px 40px 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+.code-label {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+}
+.code-display {
+    font-family: 'Outfit', sans-serif;
+    font-size: clamp(3rem, 10vw, 6.5rem);
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 8px;
+    transition: opacity 0.3s;
+    word-break: break-all;
+}
+.code-display.inactive {
+    background: none;
+    -webkit-background-clip: unset;
+    -webkit-text-fill-color: var(--text-muted);
+    background-clip: unset;
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+    font-weight: 600;
+    letter-spacing: 0;
+}
+.code-status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-top: 12px;
+}
+.code-status-chip.live {
+    background: rgba(52, 211, 153, 0.12);
+    border: 1px solid rgba(52, 211, 153, 0.25);
+    color: var(--success);
+}
+.code-status-chip.live::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    animation: pulse-dot 1.4s ease-in-out infinite;
+}
+.code-status-chip.ended {
+    background: rgba(100, 116, 139, 0.12);
+    border: 1px solid rgba(100, 116, 139, 0.2);
+    color: var(--text-muted);
+}
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+/* ── Session controls ── */
+.session-controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 24px;
+}
+.ctrl-btn {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 9px 20px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.ctrl-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+.ctrl-btn:active { transform: translateY(0); }
+.ctrl-btn.generate {
+    background: var(--accent-2);
+    color: #fff;
+}
+.ctrl-btn.end-session {
+    background: rgba(248, 113, 113, 0.15);
+    border: 1px solid rgba(248, 113, 113, 0.3);
+    color: var(--danger);
+}
+.ctrl-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ── Attendees section ── */
+.attendees-section {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.attendees-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    cursor: pointer;
+    user-select: none;
+    gap: 12px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s;
+}
+.attendees-header.open {
+    border-bottom-color: var(--border-color);
+}
+.attendees-header:hover {
+    background: var(--bg-elevated);
+}
+.attendees-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.attendees-count {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 20px;
+    background: rgba(6, 182, 212, 0.12);
+    border: 1px solid rgba(6, 182, 212, 0.25);
+    color: var(--accent-1);
+}
+.attendees-chevron {
+    color: var(--text-muted);
+    transition: transform 0.25s;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+.attendees-chevron.open { transform: rotate(180deg); }
+
+.attendees-body {
+    display: none;
+    padding: 0 20px 20px;
+}
+.attendees-body.open { display: block; }
+
+/* ── Filter toggle ── */
+.filter-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 0 12px;
+    flex-wrap: wrap;
+}
+.filter-label {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+.filter-pill {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.filter-pill.active {
+    background: rgba(6, 182, 212, 0.12);
+    border-color: rgba(6, 182, 212, 0.3);
+    color: var(--accent-1);
+}
+
+/* ── Member list ── */
+.member-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 420px;
+    overflow-y: auto;
+}
+.member-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    transition: border-color 0.2s;
+}
+.member-row.checked { border-color: rgba(52, 211, 153, 0.2); }
+.member-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 800;
+    flex-shrink: 0;
+    background: var(--accent-2);
+    color: #fff;
+}
+.member-avatar.unchecked {
+    background: var(--bg-card-solid);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+}
+.member-info { flex: 1; min-width: 0; }
+.member-name {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.member-team {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.member-status {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+.member-status.in { color: var(--success); }
+.member-status.out { color: var(--text-muted); }
+
+.empty-state {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="attendance-page">
+
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h2>Attendance</h2>
+        <a href="{% url 'attendance_records_page' %}" class="records-btn">
+            <i class="bi bi-clock-history"></i> View Records
+        </a>
+    </div>
+
+    <!-- Code card -->
+    <div class="code-card" style="margin-bottom: 24px;">
+        <div class="code-label" id="code-label">Attendance Code</div>
+        <div class="code-display {% if not active_session %}inactive{% endif %}" id="code-display">
+            {% if active_session %}{{ active_session.code }}{% else %}No active session{% endif %}
+        </div>
+        <div>
+            <span class="code-status-chip {% if active_session %}live{% else %}ended{% endif %}" id="status-chip">
+                {% if active_session %}Live{% else %}Inactive{% endif %}
+            </span>
+        </div>
+        <div class="session-controls">
+            <button class="ctrl-btn generate" id="btn-generate" onclick="generateCode()">
+                <i class="bi bi-arrow-clockwise"></i>
+                {% if active_session %}New Code{% else %}Start Session{% endif %}
+            </button>
+            <button class="ctrl-btn end-session" id="btn-end"
+                {% if not active_session %}disabled{% endif %}
+                onclick="endSession()">
+                <i class="bi bi-stop-circle"></i> End Session
+            </button>
+        </div>
+    </div>
+
+    <!-- Attendees section -->
+    <div class="attendees-section">
+        <div class="attendees-header" id="attendees-toggle" onclick="toggleAttendees()">
+            <div class="attendees-title">
+                <i class="bi bi-people"></i>
+                Attendees
+                <span class="attendees-count" id="checked-count">0</span>
+            </div>
+            <i class="bi bi-chevron-down attendees-chevron" id="attendees-chevron"></i>
+        </div>
+
+        <div class="attendees-body" id="attendees-body">
+            <!-- Filter -->
+            <div class="filter-row">
+                <span class="filter-label">Show:</span>
+                <button class="filter-pill active" id="pill-checked" onclick="setFilter('checked')">
+                    Checked in
+                </button>
+                <button class="filter-pill" id="pill-all" onclick="setFilter('all')">
+                    Everyone
+                </button>
+            </div>
+
+            <!-- List -->
+            <div class="member-list" id="member-list">
+                <div class="empty-state">Loading…</div>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /.attendance-page -->
+
+<script>
+let currentFilter = 'checked';
+let allMembers = [];
+let pollInterval = null;
+
+function toggleAttendees() {
+    const body = document.getElementById('attendees-body');
+    const chevron = document.getElementById('attendees-chevron');
+    const header = document.getElementById('attendees-toggle');
+    const open = body.classList.toggle('open');
+    chevron.classList.toggle('open', open);
+    header.classList.toggle('open', open);
+    if (open && allMembers.length === 0) fetchMembers();
+}
+
+function setFilter(filter) {
+    currentFilter = filter;
+    document.getElementById('pill-checked').classList.toggle('active', filter === 'checked');
+    document.getElementById('pill-all').classList.toggle('active', filter === 'all');
+    renderList();
+}
+
+function renderList() {
+    const list = document.getElementById('member-list');
+    const members = currentFilter === 'checked'
+        ? allMembers.filter(m => m.checked_in)
+        : allMembers;
+
+    if (members.length === 0) {
+        list.innerHTML = `<div class="empty-state">${
+            currentFilter === 'checked' ? 'No one has checked in yet.' : 'No members found.'
+        }</div>`;
+        return;
+    }
+
+    // Sort: checked in first, then alphabetically
+    const sorted = [...members].sort((a, b) => {
+        if (a.checked_in !== b.checked_in) return b.checked_in - a.checked_in;
+        return a.name.localeCompare(b.name);
+    });
+
+    list.innerHTML = sorted.map(m => `
+        <div class="member-row ${m.checked_in ? 'checked' : ''}">
+            <div class="member-avatar ${m.checked_in ? '' : 'unchecked'}">${m.initial}</div>
+            <div class="member-info">
+                <div class="member-name">${m.name}</div>
+                <div class="member-team">${m.team}</div>
+            </div>
+            <div class="member-status ${m.checked_in ? 'in' : 'out'}">
+                ${m.checked_in ? 'Checked in' : 'Not in'}
+            </div>
+        </div>
+    `).join('');
+}
+
+function updateCodeUI(data) {
+    const display = document.getElementById('code-display');
+    const chip = document.getElementById('status-chip');
+    const btnEnd = document.getElementById('btn-end');
+    const btnGen = document.getElementById('btn-generate');
+
+    if (data.is_active) {
+        display.textContent = data.code;
+        display.className = 'code-display';
+        chip.textContent = 'Live';
+        chip.className = 'code-status-chip live';
+        btnEnd.disabled = false;
+        btnGen.innerHTML = '<i class="bi bi-arrow-clockwise"></i> New Code';
+    } else {
+        display.textContent = 'No active session';
+        display.className = 'code-display inactive';
+        chip.textContent = 'Inactive';
+        chip.className = 'code-status-chip ended';
+        btnEnd.disabled = true;
+        btnGen.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Start Session';
+    }
+}
+
+function updateCount() {
+    const count = allMembers.filter(m => m.checked_in).length;
+    document.getElementById('checked-count').textContent = count;
+}
+
+function fetchMembers() {
+    fetch("{% url 'attendance_members_status' %}")
+        .then(r => r.json())
+        .then(data => {
+            updateCodeUI(data);
+            if (data.is_active) {
+                allMembers = data.members || [];
+            } else {
+                allMembers = [];
+            }
+            updateCount();
+            const bodyOpen = document.getElementById('attendees-body').classList.contains('open');
+            if (bodyOpen) renderList();
+        });
+}
+
+function generateCode() {
+    fetch("{% url 'attendance_generate' %}", {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) fetchMembers();
+    });
+}
+
+function endSession() {
+    fetch("{% url 'attendance_end' %}", {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) fetchMembers();
+    });
+}
+
+function getCookie(name) {
+    const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+    return v ? v[2] : null;
+}
+
+// Initial fetch + start polling every 5 s
+fetchMembers();
+pollInterval = setInterval(fetchMembers, 5000);
+</script>
+{% endblock %}

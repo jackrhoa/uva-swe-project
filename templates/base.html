@@ -1050,6 +1050,13 @@
                                 <i class="bi bi-list-task"></i>Tasks
                             </a>
                         </li>
+                        {% if request.user.profile.is_exec %}
+                        <li class="nav-item">
+                            <a class="nav-link {% block nav_attendance %}{% endblock %}" href="{% url 'attendance_live' %}">
+                                <i class="bi bi-qr-code"></i>Attendance
+                            </a>
+                        </li>
+                        {% endif %}
                         {% endif %}
                     </ul>
                     <div class="d-flex align-items-center gap-3">
