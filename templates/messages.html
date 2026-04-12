@@ -621,7 +621,9 @@
                        data-conversation-id="{{ item.conversation.id }}">
                         {% if item.other_user %}
                             {% with first=item.other_user.first_name|default:"" last=item.other_user.last_name|default:"" %}
-                                {% if first or last %}
+                                {% if item.other_user.profile.avatar %}
+                                    <div class="avatar-initials" style="padding:0;overflow:hidden;"><img src="{{ item.other_user.profile.avatar.url }}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;display:block;"></div>
+                                {% elif first or last %}
                                     <div class="avatar-initials">{{ first|slice:":1" }}{{ last|slice:":1" }}</div>
                                 {% else %}
                                     <div class="tool-icon blue"><i class="bi bi-person-fill"></i></div>
@@ -1298,8 +1300,11 @@
                     item.setAttribute('data-conversation-id', msg.conversation_id);
 
                     var truncated = msg.content && msg.content.length > 20 ? msg.content.slice(0, 20) + '...' : (msg.content || 'Attachment');
+                    var avatarContent = msg.sender_avatar_url
+                        ? '<img src="' + msg.sender_avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:12px;display:block;">'
+                        : escapeHtml(msg.sender_initials || '?');
                     item.innerHTML =
-                        '<div class="avatar-initials">' + escapeHtml(msg.sender_initials || '?') + '</div>' +
+                        '<div class="avatar-initials" style="padding:0;overflow:hidden;">' + avatarContent + '</div>' +
                         '<div style="flex:1;min-width:0;">' +
                             '<div class="tool-label">' + escapeHtml(msg.sender_name || msg.sender_email || 'Unknown') + '</div>' +
                             '<div class="tool-desc conversation-preview" data-last-message-id="' + msg.id + '">' + escapeHtml(truncated) + '</div>' +

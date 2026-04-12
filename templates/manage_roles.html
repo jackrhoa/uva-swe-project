@@ -93,8 +93,12 @@
             <tr {% if user_profile.user == request.user %}style="opacity:0.45;"{% endif %}>
                 <td>
                     <div class="d-flex align-items-center gap-2">
-                        <div class="user-chip-avatar" style="width:30px;height:30px;font-size:0.72rem;{% if user_profile.is_exec %}background:#b45309;{% endif %}">
-                            {{ user_profile.user.first_name|make_list|first|default:"?" }}
+                        <div class="user-chip-avatar" style="width:30px;height:30px;font-size:0.72rem;padding:0;overflow:hidden;{% if not user_profile.avatar and user_profile.is_exec %}background:#b45309;{% endif %}">
+                            {% if user_profile.avatar %}
+                                <img src="{{ user_profile.avatar.url }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">
+                            {% else %}
+                                {{ user_profile.user.first_name|make_list|first|default:"?" }}
+                            {% endif %}
                         </div>
                         <div>
                             <div style="font-weight:600;font-size:0.9rem;">

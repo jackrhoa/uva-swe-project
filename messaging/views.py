@@ -49,6 +49,17 @@ def _avatar_letters(user):
     return fallback
 
 
+def _avatar_url(user):
+    if not user:
+        return ''
+    try:
+        if user.profile.avatar:
+            return user.profile.avatar.url
+    except Exception:
+        return ''
+    return ''
+
+
 @login_required
 def message_list(request):
     if request.user.profile.is_admin():
@@ -184,6 +195,7 @@ def send_message(request, conversation_id):
                             "sender_id": request.user.id,
                             "sender_name": _display_name(request.user),
                             "sender_initials": _avatar_letters(request.user),
+                            "sender_avatar_url": _avatar_url(request.user),
                             "sender_email": request.user.email,
                         },
                     }
@@ -353,6 +365,7 @@ def send_team_message(request, team_conversation_id):
                         "sender_id": request.user.id,
                         "sender_name": _display_name(request.user),
                         "sender_initials": _avatar_letters(request.user),
+                        "sender_avatar_url": _avatar_url(request.user),
                     },
                 }
             )
@@ -369,6 +382,7 @@ def send_team_message(request, team_conversation_id):
                         'is_self': True,
                         'sender_name': _display_name(request.user),
                         'sender_initials': _avatar_letters(request.user),
+                        'sender_avatar_url': _avatar_url(request.user),
                     }
                 })
 
