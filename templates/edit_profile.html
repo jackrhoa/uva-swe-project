@@ -20,8 +20,8 @@
                             <img id="avatar-preview" src="{{ profile.avatar.url }}" alt="Profile picture"
                                  style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--border-color);display:inline-block;">
                         {% else %}
-                            <div id="avatar-placeholder" style="width:80px;height:80px;border-radius:50%;background:var(--glass-bg);border:2px solid var(--border-color);display:inline-flex;align-items:center;justify-content:center;">
-                                <i class="bi bi-person-fill" style="font-size:2rem;color:var(--text-secondary);"></i>
+                            <div id="avatar-placeholder" style="width:80px;height:80px;border-radius:50%;background:#4b5563;border:2px solid var(--border-color);display:inline-flex;align-items:center;justify-content:center;color:#d1d5db;font-size:1.4rem;font-weight:700;">
+                                {{ request.user.first_name|make_list|first }}{{ request.user.last_name|make_list|first }}
                             </div>
                             <img id="avatar-preview" src="" alt="Profile picture"
                                  style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--border-color);display:none;">

@@ -434,9 +434,10 @@ def edit_task(request, task_id):
             'deadline':          task.deadline.isoformat() if task.deadline else None,
             'active_users': [
                 {
-                    'id':      u.id,
-                    'name':    u.get_full_name() or u.username,
-                    'initial': (u.first_name[:1] or u.username[:1]).upper(),
+                    'id':        u.id,
+                    'name':      u.get_full_name() or u.username,
+                    'initial':   ((u.first_name[:1] or u.username[:1]) + u.last_name[:1]).upper(),
+                    'avatar_url': u.profile.avatar.url if hasattr(u, 'profile') and u.profile.avatar else '',
                 }
                 for u in task.active_users.all()
             ],
@@ -553,7 +554,7 @@ def attendance_records(request):
     for attempt in qs:
         u = attempt.user
         name = u.get_full_name() or u.username
-        initial = (u.first_name[:1] or u.username[:1]).upper()
+        initial = ((u.first_name[:1] or u.username[:1]) + u.last_name[:1]).upper()
         team_name = u.profile.team.name if hasattr(u, 'profile') else '—'
         rows.append({
             'initial': initial,
@@ -618,7 +619,7 @@ def attendance_members_status(request):
     rows = []
     for u in members:
         name = u.get_full_name() or u.username
-        initial = (u.first_name[:1] or u.username[:1]).upper()
+        initial = ((u.first_name[:1] or u.username[:1]) + u.last_name[:1]).upper()
         team_name = u.profile.team.name if hasattr(u, 'profile') else '—'
         rows.append({
             'id': u.id,

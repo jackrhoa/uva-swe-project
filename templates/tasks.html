@@ -672,7 +672,7 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                             {% if user.profile.avatar %}
                                 <img src="{{ user.profile.avatar.url }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">
                             {% else %}
-                                {{ user.first_name|make_list|first|default:user.username|make_list|first|upper }}
+                                {{ user.first_name|make_list|first }}{{ user.last_name|make_list|first }}
                             {% endif %}
                         </div>
                         {% endfor %}
@@ -828,7 +828,7 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                                 {% if user.profile.avatar %}
                                     <img src="{{ user.profile.avatar.url }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">
                                 {% else %}
-                                    {{ user.first_name|make_list|first|default:user.username|make_list|first|upper }}
+                                    {{ user.first_name|make_list|first }}{{ user.last_name|make_list|first }}
                                 {% endif %}
                             </div>
                             {% endfor %}
@@ -969,7 +969,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 const chip = document.createElement('div');
                 chip.className = 'task-user-chip';
                 chip.dataset.name = u.name;
-                chip.textContent = u.initial;
+                chip.style.padding = '0';
+                chip.style.overflow = 'hidden';
+                if (u.avatar_url) {
+                    const img = document.createElement('img');
+                    img.src = u.avatar_url;
+                    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';
+                    img.onerror = () => { chip.removeChild(img); chip.textContent = u.initial; chip.style.padding = ''; };
+                    chip.appendChild(img);
+                } else {
+                    chip.textContent = u.initial;
+                }
                 container.appendChild(chip);
             });
         }
