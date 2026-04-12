@@ -1,3 +1,5 @@
+import random
+import string
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -166,9 +168,19 @@ def get_announcements_for_user(user):
         .distinct()
     )
 
+class AnnouncementRead(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='announcement_reads')
+    announcement = models.ForeignKey('Announcement', on_delete=models.CASCADE, related_name='reads')
+    read_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [('user', 'announcement')]
+
+
 def _generate_code():
     """Return a random 6-character alphanumeric code (uppercase)."""
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    chars = [c for c in string.ascii_uppercase + string.digits if c not in ('O', '0')]
+    return ''.join(random.choices(chars, k=6))
  
  
 class AttendanceSession(models.Model):

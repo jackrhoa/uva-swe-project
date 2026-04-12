@@ -9,8 +9,7 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
-from users.models import Team
-from users.models import get_default_team
+from users.models import Team, get_default_team, Announcement, AnnouncementRead
 from .forms import MessageForm, StartConversationForm, TeamMessageForm
 from .models import (
     Conversation,
@@ -203,7 +202,6 @@ def send_message(request, conversation_id):
                 message_body=message.content,
             )
 
-            
             if recipient:
                 channel_layer = get_channel_layer()
                 async_to_sync(channel_layer.group_send)(
@@ -316,8 +314,6 @@ def team_chat(request):
     is_exec = profile.is_exec()
     no_team_id = get_default_team()
 
-    # Execs can view any team via ?team=<id>; default to their own team if it's real,
-    # otherwise fall back to the first available real team
     if is_exec:
         if request.GET.get('team'):
             team = get_object_or_404(Team, id=request.GET.get('team'))
@@ -335,13 +331,40 @@ def team_chat(request):
             return redirect('home')
 
     team_conversation, created = TeamConversation.objects.get_or_create(team=team)
-    team_messages = team_conversation.messages.select_related('sender').order_by('created_at')
+
+    raw_messages = team_conversation.messages.select_related(
+        'sender', 'sender__profile'
+    ).order_by('created_at')
+    message_items = [
+        {'type': 'message', 'sort_at': msg.created_at, 'obj': msg}
+        for msg in raw_messages
+    ]
+
+    team_announcements = (
+        Announcement.objects
+        .filter(
+            Q(target=Announcement.TARGET_ALL)
+            | Q(target=Announcement.TARGET_SPECIFIC, target_teams=team)
+        )
+        .select_related('sent_by')
+        .distinct()
+        .order_by('sent_at')
+    )
+    announcement_items = [
+        {'type': 'announcement', 'sort_at': ann.sent_at, 'obj': ann}
+        for ann in team_announcements
+    ]
+
+    timeline_items = sorted(
+        message_items + announcement_items,
+        key=lambda item: item['sort_at']
+    )
+
     form = TeamMessageForm()
 
     all_teams = None
     if is_exec:
         teams_qs = Team.objects.exclude(id=no_team_id).order_by('name')
-        # Fetch last non-deleted message per team conversation in bulk
         team_ids = list(teams_qs.values_list('id', flat=True))
         last_msgs = {}
         for tc in TeamConversation.objects.filter(team_id__in=team_ids).prefetch_related(
@@ -358,14 +381,21 @@ def team_chat(request):
                 'last_message': last_msg,
             })
 
+    read_ann_ids = set(
+        AnnouncementRead.objects
+        .filter(user=request.user)
+        .values_list('announcement_id', flat=True)
+    )
+
     context = {
         'team': team,
         'user_team': profile.team,
         'team_conversation': team_conversation,
-        'team_messages': team_messages,
+        'timeline_items': timeline_items,
         'message_form': form,
         'is_exec': is_exec,
         'all_teams': all_teams,
+        'read_ann_ids': read_ann_ids,
     }
     return render(request, 'team_chat.html', context)
 
@@ -403,7 +433,6 @@ def delete_team_message(request, message_id):
 def send_team_message(request, team_conversation_id):
     profile = request.user.profile
 
-    # Execs can send to any team; members can only send to their own team
     if profile.is_exec():
         team_conversation = get_object_or_404(TeamConversation, id=team_conversation_id)
     else:
