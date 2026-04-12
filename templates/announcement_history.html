@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% block title %}All Announcements — CIO Manager{% endblock %}
+
+{% block extra_css %}
+<style>
+.history-page h2 {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 1.55rem;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #f1f5f9 0%, #94a3b8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0;
+}
+html[data-theme="light"] .history-page h2 {
+    background: linear-gradient(135deg, #0f172a 0%, #475569 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+/* ── Base card ── */
+.ann-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 16px 20px;
+    transition: border-color 0.2s ease, background 0.2s ease, opacity 0.3s ease;
+    animation: annSlideIn 0.3s ease both;
+}
+@keyframes annSlideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Unread variant ── */
+.ann-card.ann-unread {
+    background: rgba(99, 102, 241, 0.10);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    border-left: 3px solid #6366f1;
+}
+html[data-theme="light"] .ann-card.ann-unread {
+    background: rgba(99, 102, 241, 0.07);
+}
+
+.ann-card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.ann-card-label {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.63rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.ann-card-date {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+.ann-card-body {
+    font-size: 0.9rem;
+    line-height: 1.65;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.ann-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+.ann-target-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(139,92,246,.12);
+    border: 1px solid rgba(139,92,246,.25);
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 99px;
+    font-family: 'Outfit', sans-serif;
+}
+
+/* ── Toggle read button ── */
+.ann-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(99,102,241,.35);
+    background: rgba(99,102,241,.10);
+    color: #6366f1;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+}
+.ann-toggle-btn:hover {
+    background: rgba(99,102,241,.22);
+    border-color: rgba(99,102,241,.5);
+}
+.ann-toggle-btn.is-read {
+    border-color: var(--border-color);
+    background: transparent;
+    color: var(--text-muted);
+}
+.ann-toggle-btn.is-read:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: var(--border-hover);
+}
+
+/* ── Stack of cards ── */
+.ann-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ── Empty state ── */
+.empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    border: 1px dashed var(--border-color);
+    border-radius: 14px;
+}
+.empty-state .empty-icon { display: block; font-size: 1.8rem; margin-bottom: 10px; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="history-page">
+
+    <div class="d-flex align-items-center justify-content-between mb-4 animate-in delay-1">
+        <h2>All Announcements</h2>
+        {% if announcements %}
+        <button onclick="markAllRead()" style="font-family:'Outfit',sans-serif;font-size:0.78rem;font-weight:600;color:var(--text-muted);background:none;border:none;cursor:pointer;padding:0;flex-shrink:0;">
+            <i class="bi bi-check-all"></i> Mark all as read
+        </button>
+        {% endif %}
+    </div>
+
+    <div class="ann-list">
+        {% for ann in announcements %}
+        <div class="ann-card{% if ann.id not in read_ann_ids %} ann-unread{% endif %}" id="ann-{{ ann.id }}"
+             style="animation-delay: calc({{ forloop.counter0 }} * 60ms);">
+            <div class="ann-card-meta">
+                <span class="ann-card-label">
+                    <i class="bi bi-megaphone-fill"></i> Announcement
+                </span>
+                <span class="ann-card-date">{{ ann.sent_at|date:"M j, Y · g:i a" }}</span>
+            </div>
+
+            <div class="ann-card-body">{{ ann.body }}</div>
+
+            <div class="ann-card-footer">
+                <span>
+                    — {{ ann.sent_by.get_full_name|default:ann.sent_by.username }}
+                    &nbsp;·&nbsp;
+                    {% if ann.target == 'all' %}
+                        <span class="ann-target-chip"><i class="bi bi-globe2"></i> All Teams</span>
+                    {% else %}
+                        {% for t in ann.target_teams.all %}
+                            <span class="ann-target-chip"><i class="bi bi-people-fill"></i> {{ t.name }}</span>
+                        {% endfor %}
+                    {% endif %}
+                </span>
+                {% if ann.id in read_ann_ids %}
+                    <button class="ann-toggle-btn is-read" onclick="toggleRead({{ ann.id }}, false)">
+                        <i class="bi bi-arrow-counterclockwise"></i> Mark as unread
+                    </button>
+                {% else %}
+                    <button class="ann-toggle-btn" onclick="toggleRead({{ ann.id }}, true)">
+                        <i class="bi bi-check-lg"></i> Mark as read
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <span class="empty-icon">📢</span>
+            No announcements yet.
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function markAllRead() {
+    fetch('/announcements/mark-all-read/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+    }).then(r => r.json()).then(data => {
+        if (!data.ok) return;
+        document.querySelectorAll('.ann-card.ann-unread').forEach(card => {
+            card.classList.remove('ann-unread');
+            const btn = card.querySelector('.ann-toggle-btn');
+            if (btn) {
+                const id = card.id.replace('ann-', '');
+                btn.className = 'ann-toggle-btn is-read';
+                btn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i> Mark as unread';
+                btn.onclick = () => toggleRead(id, false);
+            }
+        });
+    });
+}
+
+function toggleRead(id, markRead) {
+    const url = markRead
+        ? `/announcements/mark-read/${id}/`
+        : `/announcements/unmark-read/${id}/`;
+    fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+    }).then(r => r.json()).then(data => {
+        if (!data.ok) return;
+        const card = document.getElementById('ann-' + id);
+        const footer = card.querySelector('.ann-card-footer');
+        const btn = footer.querySelector('.ann-toggle-btn');
+        if (markRead) {
+            card.classList.remove('ann-unread');
+            btn.className = 'ann-toggle-btn is-read';
+            btn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i> Mark as unread';
+            btn.onclick = () => toggleRead(id, false);
+        } else {
+            card.classList.add('ann-unread');
+            btn.className = 'ann-toggle-btn';
+            btn.innerHTML = '<i class="bi bi-check-lg"></i> Mark as read';
+            btn.onclick = () => toggleRead(id, true);
+        }
+    });
+}
+</script>
+{% endblock %}

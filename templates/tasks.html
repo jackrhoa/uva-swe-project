@@ -8,10 +8,6 @@
 <style>
 /* ── Task-page-specific styles, all using base.html CSS vars ── */
 
-.tasks-page {
-    /* base.html already provides page-wrapper max-width + padding */
-}
-
 .tasks-page h2 {
     font-family: 'Outfit', sans-serif;
     font-weight: 800;
@@ -41,7 +37,7 @@ html[data-theme="light"] .tasks-page h2 {
     padding-left: 2px;
 }
 
-/* ── Add task button — reuses base btn-gradient ── */
+/* ── Add task button ── */
 .add-task-btn {
     display: inline-flex;
     align-items: center;
@@ -71,13 +67,13 @@ html[data-theme="light"] .tasks-page h2 {
     margin-bottom: 40px;
 }
 
-/* ── Task card — extends glass-card style ── */
+/* ── Task card ── */
 .task-box {
     background: var(--bg-card);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border-color);
-    border-top: 3px solid transparent;
+    border-top: 3px solid var(--border-color);
     border-radius: 14px;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
     animation: taskSlideIn 0.3s ease both;
@@ -86,10 +82,15 @@ html[data-theme="light"] .tasks-page h2 {
     border-color: var(--border-hover);
     box-shadow: var(--glow-accent);
 }
-.task-box[data-priority="1"] { border-top-color: rgba(59,130,246,.3); }
-.task-box[data-priority="2"] { border-top-color: rgba(59,130,246,.8); }
-.task-box[data-priority="3"] { border-top-color: #f87171; }
 
+/* Priority top-border colors */
+.task-box[data-priority="0"] { border-top-color: rgba(96,165,250,.4); }
+.task-box[data-priority="1"] { border-top-color: rgba(34,197,94,.4); }
+.task-box[data-priority="2"] { border-top-color: rgba(234,179,8,.5); }
+.task-box[data-priority="3"] { border-top-color: rgba(249,115,22,.7); }
+.task-box[data-priority="4"] { border-top-color: #f87171; }
+
+/* Completed — green outline */
 .task-box.is-completed {
     opacity: 0.55;
     border-top-color: var(--success) !important;
@@ -97,6 +98,12 @@ html[data-theme="light"] .tasks-page h2 {
 .task-box.is-completed .task-name {
     text-decoration: line-through;
     color: var(--text-muted);
+}
+
+/* Overdue — red outline */
+.task-box.is-overdue {
+    border-top-color: rgba(239,68,68,.85) !important;
+    box-shadow: 0 0 0 1px rgba(239,68,68,.18);
 }
 
 @keyframes taskSlideIn {
@@ -110,8 +117,9 @@ html[data-theme="light"] .tasks-page h2 {
 .task-header {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     margin-bottom: 8px;
+    flex-wrap: wrap;
 }
 
 .task-name {
@@ -119,22 +127,93 @@ html[data-theme="light"] .tasks-page h2 {
     font-size: 1rem;
     font-weight: 700;
     flex: 1;
+    min-width: 0;
     color: var(--text-primary);
 }
 
+/* Right-side header group: deadline + priority + controls */
+.task-header-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+/* ── Priority badge — colored filled ── */
 .task-priority-badge {
     font-family: 'Outfit', sans-serif;
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    padding: 2px 8px;
+    padding: 4px 12px;
     border-radius: 20px;
-    border: 1px solid var(--border-color);
-    color: var(--text-muted);
+    border: 1.5px solid;
+    white-space: nowrap;
 }
-.task-priority-badge[data-p="3"] { border-color: rgba(248,113,113,.4); color: #f87171; }
-.task-priority-badge[data-p="2"] { border-color: rgba(59,130,246,.4); color: #60a5fa; }
+/* Undetermined — blue */
+.task-priority-badge[data-p="0"] {
+    background: rgba(96,165,250,.15);
+    border-color: rgba(96,165,250,.5);
+    color: #60a5fa;
+}
+/* Low — green */
+.task-priority-badge[data-p="1"] {
+    background: rgba(34,197,94,.15);
+    border-color: rgba(34,197,94,.5);
+    color: #4ade80;
+}
+/* Medium — yellow */
+.task-priority-badge[data-p="2"] {
+    background: rgba(234,179,8,.15);
+    border-color: rgba(234,179,8,.5);
+    color: #facc15;
+}
+/* High — orange */
+.task-priority-badge[data-p="3"] {
+    background: rgba(249,115,22,.15);
+    border-color: rgba(249,115,22,.5);
+    color: #fb923c;
+}
+/* Urgent — red */
+.task-priority-badge[data-p="4"] {
+    background: rgba(239,68,68,.15);
+    border-color: rgba(239,68,68,.5);
+    color: #f87171;
+}
+
+/* Light theme overrides */
+html[data-theme="light"] .task-priority-badge[data-p="0"] { color: #2563eb; background: rgba(59,130,246,.1); border-color: rgba(59,130,246,.35); }
+html[data-theme="light"] .task-priority-badge[data-p="1"] { color: #16a34a; background: rgba(22,163,74,.1); border-color: rgba(22,163,74,.35); }
+html[data-theme="light"] .task-priority-badge[data-p="2"] { color: #a16207; background: rgba(202,138,4,.1); border-color: rgba(202,138,4,.35); }
+html[data-theme="light"] .task-priority-badge[data-p="3"] { color: #c2410c; background: rgba(234,88,12,.1); border-color: rgba(234,88,12,.35); }
+html[data-theme="light"] .task-priority-badge[data-p="4"] { color: #dc2626; background: rgba(220,38,38,.1); border-color: rgba(220,38,38,.35); }
+
+/* ── Deadline badge on card ── */
+.task-deadline-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border-color);
+    color: var(--text-muted);
+    background: var(--bg-elevated);
+    white-space: nowrap;
+}
+.task-deadline-badge.overdue {
+    border-color: rgba(239,68,68,.5);
+    color: #f87171;
+    background: rgba(239,68,68,.1);
+}
+html[data-theme="light"] .task-deadline-badge.overdue {
+    color: #dc2626;
+    background: rgba(220,38,38,.08);
+    border-color: rgba(220,38,38,.35);
+}
 
 .task-description {
     font-size: 0.85rem;
@@ -151,7 +230,7 @@ html[data-theme="light"] .tasks-page h2 {
     gap: 10px;
 }
 
-/* progress */
+/* ── Progress: arrows (multi-action) ── */
 .task-progress {
     display: flex;
     align-items: center;
@@ -188,6 +267,48 @@ html[data-theme="light"] .tasks-page h2 {
 .progress-text.done    { color: var(--success); }
 .progress-text.partial { color: var(--text-primary); }
 
+/* ── Progress: single-action checkbox ── */
+.task-checkbox-wrap {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 2px 0;
+}
+
+.task-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 2px solid var(--border-color);
+    background: var(--bg-elevated);
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.task-checkbox:hover {
+    border-color: var(--accent-2);
+    box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+}
+.task-checkbox:checked {
+    background: var(--success, #22c55e);
+    border-color: var(--success, #22c55e);
+}
+.task-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 7px;
+    height: 11px;
+    border: 2.5px solid #fff;
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg);
+}
+
 /* ── User chips (read view) ── */
 .active-users {
     display: flex;
@@ -223,7 +344,6 @@ html[data-theme="light"] .tasks-page h2 {
 }
 .task-user-chip:hover { transform: scale(1.15); z-index: 10; }
 
-/* tooltip */
 .task-user-chip::after {
     content: attr(data-name);
     position: absolute;
@@ -321,6 +441,14 @@ html[data-theme="light"] .tasks-page h2 {
 .edit-input[type="number"]::-webkit-outer-spin-button,
 .edit-input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
 
+/* datetime-local input — make calendar icon visible in dark mode */
+.edit-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.6);
+    cursor: pointer;
+}
+.edit-deadline {
+    width: 180px;
+}
 /* user assignment */
 .user-assign-row {
     display: flex;
@@ -334,9 +462,9 @@ html[data-theme="light"] .tasks-page h2 {
     border: none;
     color: #fff;
     font-family: 'Outfit', sans-serif;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: 700;
-    padding: 8px 14px;
+    padding: 8px 30px;
     border-radius: 9px;
     cursor: pointer;
     white-space: nowrap;
@@ -472,27 +600,59 @@ html[data-theme="light"] .tasks-page h2 {
 
     <div class="tasks-container">
         {% for task in uncompleted_tasks %}
-        <div class="task-box"
+
+        {# Determine overdue: incomplete + has deadline + deadline is past #}
+        {% with is_overdue=False %}
+        <div class="task-box {% if task.deadline and task.deadline < now %}is-overdue{% endif %}"
              data-task="{{ task.id }}"
-             data-priority="{{ task.priority|default:1 }}"
+             data-priority="{{ task.priority|default:0 }}"
              data-edit-url="{% url 'edit_task' task.id %}">
 
             <div class="task-view">
                 <div class="task-header">
                     <span class="task-name">{{ task.name|default:"Untitled Task" }}</span>
-                    <span class="task-priority-badge" data-p="{{ task.priority|default:1 }}">P{{ task.priority|default:1 }}</span>
-                    {% if is_exec %}
-                    <div class="exec-controls">
-                        <button class="icon-btn edit-btn" title="Edit"><i class="bi bi-pencil"></i></button>
-                        <a href="{% url 'remove_task' task.id %}" class="icon-btn danger" title="Delete"><i class="bi bi-trash"></i></a>
+
+                    <div class="task-header-right">
+                        {# Deadline badge #}
+                        {% if task.deadline %}
+                        <span class="task-deadline-badge {% if task.deadline < now %}overdue{% endif %}"
+                              data-deadline="{{ task.deadline.isoformat }}">
+                            🕐 {{ task.deadline|date:"M j, g:ia" }}
+                        </span>
+                        {% endif %}
+
+                        {# Priority badge #}
+                        <span class="task-priority-badge" data-p="{{ task.priority|default:0 }}">
+                            {% if task.priority == 0 %}PENDING SETUP
+                            {% elif task.priority == 1 %}LOW
+                            {% elif task.priority == 2 %}MED
+                            {% elif task.priority == 3 %}HIGH
+                            {% elif task.priority == 4 %}URGENT
+                            {% endif %}
+                        </span>
+
+                        {% if is_exec %}
+                        <div class="exec-controls">
+                            <button class="icon-btn edit-btn" title="Edit"><i class="bi bi-pencil"></i></button>
+                            <a href="{% url 'remove_task' task.id %}" class="icon-btn danger" title="Delete"><i class="bi bi-trash"></i></a>
+                        </div>
+                        {% endif %}
                     </div>
-                    {% endif %}
                 </div>
 
                 <div class="task-description">{{ task.description|default:"No description provided." }}</div>
 
                 <div class="task-footer">
                     <div class="task-progress">
+                        {% if task.total_actions == 1 %}
+                        {# Single-action: checkbox #}
+                        <div class="task-checkbox-wrap">
+                            <input type="checkbox"
+                                   class="task-checkbox single-checkbox"
+                                   {% if task.actions_completed >= 1 %}checked{% endif %}>
+                        </div>
+                        {% else %}
+                        {# Multi-action: arrows + counter #}
                         <button class="prog-btn dec-btn">◀</button>
                         <span class="progress-text {% if task.actions_completed == 0 %}{% elif task.actions_completed >= task.total_actions %}done{% else %}partial{% endif %}"
                               data-completed="{{ task.actions_completed }}"
@@ -500,6 +660,7 @@ html[data-theme="light"] .tasks-page h2 {
                             {{ task.actions_completed }}/{{ task.total_actions }}
                         </span>
                         <button class="prog-btn inc-btn">▶</button>
+                        {% endif %}
                     </div>
 
                     <div class="active-users">
@@ -507,9 +668,12 @@ html[data-theme="light"] .tasks-page h2 {
                         <div class="task-user-chip team-chip" data-name="Whole team">ALL</div>
                         {% else %}
                         {% for user in task.active_users.all %}
-                        <div class="task-user-chip"
-                             data-name="{{ user.get_full_name|default:user.username }}">
-                            {{ user.first_name|make_list|first|default:user.username|make_list|first|upper }}
+                        <div class="task-user-chip" data-name="{{ user.get_full_name|default:user.username }}" style="padding:0;overflow:hidden;">
+                            {% if user.profile.avatar %}
+                                <img src="{{ user.profile.avatar.url }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">
+                            {% else %}
+                                {{ user.first_name|make_list|first|default:user.username|make_list|first|upper }}
+                            {% endif %}
                         </div>
                         {% endfor %}
                         {% endif %}
@@ -531,24 +695,34 @@ html[data-theme="light"] .tasks-page h2 {
                         <textarea class="edit-textarea edit-description">{{ task.description }}</textarea>
                     </div>
                     <div>
-                        <label class="field-label">Total actions</label>
+                        <label class="field-label">Quota (If  not applicable, leave as 1)</label>
                         <input class="edit-input edit-total-actions" type="number" value="{{ task.total_actions }}" min="1">
                     </div>
                     <div>
-                        <label class="field-label">Priority (Higher = More Important)</label>
-                        <input class="edit-input edit-priority" type="number" value="{{ task.priority }}" min="1" max="3">
+                        <label class="field-label">Priority</label>
+                        <select class="edit-select edit-priority">
+                            <option value="0" {% if task.priority == 0 %}selected{% endif %}>🔵 Undetermined</option>
+                            <option value="1" {% if task.priority == 1 %}selected{% endif %}>🟢 Low Priority</option>
+                            <option value="2" {% if task.priority == 2 %}selected{% endif %}>🟡 Medium Priority</option>
+                            <option value="3" {% if task.priority == 3 %}selected{% endif %}>🟠 High Priority</option>
+                            <option value="4" {% if task.priority == 4 %}selected{% endif %}>🔴 URGENT</option>
+                        </select>
+                    </div>
+                    <div class="full">
+                        <label class="field-label">Deadline (optional)</label>
+                        <input class="edit-input edit-deadline" type="datetime-local"
+                               value="{{ task.deadline|date:'Y-m-d\TH:i'|default:'' }}">
                     </div>
                     <div class="full">
                         <label class="field-label">Assign users</label>
                         <div class="user-assign-row">
                             <select class="edit-select user-dropdown">
                                 <option value="">— select —</option>
-                                {# Team option first #}
                                 <option value="__team__"
                                         data-name="{{ team_name }} (Everyone)"
                                         data-initial="ALL"
                                         data-is-team="true">
-                                    👥 {{ team_name }} (Everyone)
+                                    👥 {{ team_name }} (Everyone In Team)
                                 </option>
                                 {% for member in team_members %}
                                 <option value="{{ member.id }}"
@@ -571,6 +745,7 @@ html[data-theme="light"] .tasks-page h2 {
             {% endif %}
 
         </div>
+        {% endwith %}
         {% empty %}
         <div class="empty-state">
             <span class="empty-icon">📋</span>
@@ -590,25 +765,50 @@ html[data-theme="light"] .tasks-page h2 {
             {% for task in completed_tasks %}
             <div class="task-box is-completed"
                  data-task="{{ task.id }}"
-                 data-priority="{{ task.priority|default:1 }}"
+                 data-priority="{{ task.priority|default:0 }}"
                  data-edit-url="{% url 'edit_task' task.id %}">
 
                 <div class="task-view">
                     <div class="task-header">
                         <span class="task-name">{{ task.name|default:"Untitled Task" }}</span>
-                        <span class="task-priority-badge" data-p="{{ task.priority|default:1 }}">P{{ task.priority|default:1 }}</span>
-                        {% if is_exec %}
-                        <div class="exec-controls">
-                            <button class="icon-btn edit-btn" title="Edit"><i class="bi bi-pencil"></i></button>
-                            <a href="{% url 'remove_task' task.id %}" class="icon-btn danger" title="Delete"><i class="bi bi-trash"></i></a>
+
+                        <div class="task-header-right">
+                            {% if task.deadline %}
+                            <span class="task-deadline-badge"
+                                  data-deadline="{{ task.deadline.isoformat }}">
+                                🕐 {{ task.deadline|date:"M j, g:ia" }}
+                            </span>
+                            {% endif %}
+
+                            <span class="task-priority-badge" data-p="{{ task.priority|default:0 }}">
+                                {% if task.priority == 0 %}PENDING SETUP
+                                {% elif task.priority == 1 %}LOW
+                                {% elif task.priority == 2 %}MED
+                                {% elif task.priority == 3 %}HIGH
+                                {% elif task.priority == 4 %}URGENT
+                                {% endif %}
+                            </span>
+
+                            {% if is_exec %}
+                            <div class="exec-controls">
+                                <button class="icon-btn edit-btn" title="Edit"><i class="bi bi-pencil"></i></button>
+                                <a href="{% url 'remove_task' task.id %}" class="icon-btn danger" title="Delete"><i class="bi bi-trash"></i></a>
+                            </div>
+                            {% endif %}
                         </div>
-                        {% endif %}
                     </div>
 
                     <div class="task-description">{{ task.description|default:"No description provided." }}</div>
 
                     <div class="task-footer">
                         <div class="task-progress">
+                            {% if task.total_actions == 1 %}
+                            <div class="task-checkbox-wrap">
+                                <input type="checkbox"
+                                       class="task-checkbox single-checkbox"
+                                       {% if task.actions_completed >= 1 %}checked{% endif %}>
+                            </div>
+                            {% else %}
                             <button class="prog-btn dec-btn">◀</button>
                             <span class="progress-text done"
                                   data-completed="{{ task.actions_completed }}"
@@ -616,15 +816,20 @@ html[data-theme="light"] .tasks-page h2 {
                                 {{ task.actions_completed }}/{{ task.total_actions }}
                             </span>
                             <button class="prog-btn inc-btn">▶</button>
+                            {% endif %}
                         </div>
+
                         <div class="active-users">
                             {% if task.whole_team %}
                             <div class="task-user-chip team-chip" data-name="Whole team">ALL</div>
                             {% else %}
                             {% for user in task.active_users.all %}
-                            <div class="task-user-chip"
-                                 data-name="{{ user.get_full_name|default:user.username }}">
-                                {{ user.first_name|make_list|first|default:user.username|make_list|first|upper }}
+                            <div class="task-user-chip" data-name="{{ user.get_full_name|default:user.username }}" style="padding:0;overflow:hidden;">
+                                {% if user.profile.avatar %}
+                                    <img src="{{ user.profile.avatar.url }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">
+                                {% else %}
+                                    {{ user.first_name|make_list|first|default:user.username|make_list|first|upper }}
+                                {% endif %}
                             </div>
                             {% endfor %}
                             {% endif %}
@@ -650,8 +855,19 @@ html[data-theme="light"] .tasks-page h2 {
                             <input class="edit-input edit-total-actions" type="number" value="{{ task.total_actions }}" min="1">
                         </div>
                         <div>
-                            <label class="field-label">Priority (Higher = More Important)</label>
-                            <input class="edit-input edit-priority" type="number" value="{{ task.priority }}" min="1" max="100">
+                            <label class="field-label">Priority</label>
+                            <select class="edit-select edit-priority">
+                                <option value="0" {% if task.priority == 0 %}selected{% endif %}>🔵 Undetermined</option>
+                                <option value="1" {% if task.priority == 1 %}selected{% endif %}>🟢 Low Priority</option>
+                                <option value="2" {% if task.priority == 2 %}selected{% endif %}>🟡 Medium Priority</option>
+                                <option value="3" {% if task.priority == 3 %}selected{% endif %}>🟠 High Priority</option>
+                                <option value="4" {% if task.priority == 4 %}selected{% endif %}>🔴 URGENT</option>
+                            </select>
+                        </div>
+                        <div class="full">
+                            <label class="field-label">Deadline (optional)</label>
+                            <input class="edit-input edit-deadline" type="datetime-local"
+                                   value="{{ task.deadline|date:'Y-m-d\TH:i'|default:'' }}">
                         </div>
                         <div class="full">
                             <label class="field-label">Assign users</label>
@@ -700,6 +916,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return el ? el.value : '';
     };
 
+    // Priority label map
+    const PRIORITY_LABELS = { 0: 'PENDING SETUP', 1: 'LOW', 2: 'MED', 3: 'HIGH', 4: 'URGENT' };
+
     // ── Completed section toggle ──
     const toggle = document.getElementById('completedToggle');
     const completedContainer = document.getElementById('completedContainer');
@@ -710,9 +929,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ── Format a deadline ISO string for display ──
+    const formatDeadline = (iso) => {
+        if (!iso) return '';
+        const dt = new Date(iso);
+        return dt.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    };
+
     // ── Update progress display ──
     const updateProgressUI = (box, completed, total) => {
+        const checkbox = box.querySelector('.single-checkbox');
+        if (checkbox) {
+            // Single-action mode
+            checkbox.checked = completed >= 1;
+            return;
+        }
         const pt = box.querySelector('.progress-text');
+        if (!pt) return;
         pt.textContent = `${completed}/${total}`;
         pt.dataset.completed = completed;
         pt.dataset.total = total;
@@ -742,6 +975,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // ── Update deadline badge in read view after save ──
+    const updateDeadlineBadge = (box, deadlineISO, isCompleted) => {
+        const headerRight = box.querySelector('.task-header-right');
+        let badge = box.querySelector('.task-deadline-badge');
+        const priorityBadge = box.querySelector('.task-priority-badge');
+
+        if (deadlineISO) {
+            const now = new Date();
+            const dl = new Date(deadlineISO);
+            const overdue = !isCompleted && dl < now;
+
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'task-deadline-badge';
+                headerRight.insertBefore(badge, priorityBadge);
+            }
+            badge.className = 'task-deadline-badge' + (overdue ? ' overdue' : '');
+            badge.dataset.deadline = deadlineISO;
+            badge.textContent = '🕐 ' + formatDeadline(deadlineISO);
+        } else {
+            if (badge) badge.remove();
+        }
+    };
+
     // ── Render assigned chips in edit panel ──
     function renderAssignedChips(editDiv, users) {
         const container = editDiv.querySelector('.assigned-chips');
@@ -767,7 +1024,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const cancelBtn = box.querySelector('.cancel-btn');
         const saveBtn   = box.querySelector('.save-btn');
 
-        // Per-card assigned users state
         let assignedUsers = [];
 
         if (editDiv) {
@@ -776,7 +1032,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const dropdown = editDiv.querySelector('.user-dropdown');
 
             if (isTeam) {
-                // Pre-populate with the team option
                 const teamOpt = dropdown ? [...dropdown.options].find(o => o.value === '__team__') : null;
                 if (teamOpt) {
                     assignedUsers.push({ id: '__team__', name: teamOpt.dataset.name, initial: 'ALL', isTeam: true });
@@ -796,14 +1051,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!opt.value) return;
 
                 const isTeamOpt = opt.dataset.isTeam === 'true';
-
-                // If adding the whole team, clear individuals and replace
                 if (isTeamOpt) {
                     assignedUsers = [{ id: '__team__', name: opt.dataset.name, initial: 'ALL', isTeam: true }];
                 } else {
-                    // If whole team was previously added, remove it first
                     assignedUsers = assignedUsers.filter(u => !u.isTeam);
-                    if (assignedUsers.find(u => u.id === opt.value)) return; // already added
+                    if (assignedUsers.find(u => u.id === opt.value)) return;
                     assignedUsers.push({ id: opt.value, name: opt.dataset.name, initial: opt.dataset.initial, isTeam: false });
                 }
                 renderAssignedChips(editDiv, assignedUsers);
@@ -834,6 +1086,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     description:   editDiv.querySelector('.edit-description').value,
                     total_actions: editDiv.querySelector('.edit-total-actions').value,
                     priority:      editDiv.querySelector('.edit-priority').value,
+                    deadline:      editDiv.querySelector('.edit-deadline').value,  // '' if cleared
                     whole_team:    wholeTeam,
                     active_users:  wholeTeam ? [] : assignedUsers.map(u => u.id),
                 };
@@ -846,13 +1099,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     const result = await res.json();
                     if (result.error) { console.error('Save error:', result.error); return; }
 
-                    box.querySelector('.task-name').textContent           = result.name;
-                    box.querySelector('.task-description').textContent    = result.description;
-                    box.querySelector('.task-priority-badge').textContent = `P${result.priority}`;
-                    box.querySelector('.task-priority-badge').dataset.p   = result.priority;
+                    // Update card read view
+                    box.querySelector('.task-name').textContent        = result.name;
+                    box.querySelector('.task-description').textContent = result.description;
+
+                    const pb = box.querySelector('.task-priority-badge');
+                    pb.textContent = PRIORITY_LABELS[result.priority] ?? 'NEW';
+                    pb.dataset.p   = result.priority;
                     box.dataset.priority = result.priority;
+
                     updateProgressUI(box, result.actions_completed, result.total_actions);
                     updateUserChips(box, result.active_users, result.whole_team);
+
+                    const isCompleted = result.actions_completed >= result.total_actions;
+                    updateDeadlineBadge(box, result.deadline, isCompleted);
+
+                    // Overdue class
+                    const now = new Date();
+                    const dl  = result.deadline ? new Date(result.deadline) : null;
+                    box.classList.toggle('is-overdue', !!(dl && !isCompleted && dl < now));
 
                     editDiv.style.display = 'none';
                     editBtn.style.display = '';
@@ -862,10 +1127,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Progress arrows
-        const decBtn = box.querySelector('.dec-btn');
-        const incBtn = box.querySelector('.inc-btn');
+        // ── Single-action checkbox ──
+        const checkbox = box.querySelector('.single-checkbox');
+        if (checkbox) {
+            checkbox.addEventListener('change', () => {
+                sendProgress(checkbox.checked ? 1 : 0);
+            });
+        }
 
+        // ── Multi-action progress arrows ──
         const sendProgress = async (newVal) => {
             try {
                 const res = await fetch(editUrl, {
@@ -875,11 +1145,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const result = await res.json();
                 if (result.error) return;
+
                 updateProgressUI(box, result.actions_completed, result.total_actions);
+
+                // Toggle completed style
+                const done = result.actions_completed >= result.total_actions;
+                box.classList.toggle('is-completed', done);
+                box.querySelector('.task-name').style.textDecoration = done ? 'line-through' : '';
+
+                // Re-evaluate overdue (completing a task removes overdue)
+                const deadlineBadge = box.querySelector('.task-deadline-badge');
+                const dl = deadlineBadge ? new Date(deadlineBadge.dataset.deadline) : null;
+                const now = new Date();
+                box.classList.toggle('is-overdue', !!(dl && !done && dl < now));
+                if (deadlineBadge) {
+                    deadlineBadge.classList.toggle('overdue', !!(dl && !done && dl < now));
+                }
             } catch (err) {
                 console.error('Progress update failed:', err);
             }
         };
+
+        const decBtn = box.querySelector('.dec-btn');
+        const incBtn = box.querySelector('.inc-btn');
 
         if (decBtn) {
             decBtn.addEventListener('click', () => {

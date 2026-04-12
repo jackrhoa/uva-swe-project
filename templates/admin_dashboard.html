@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel — CIO Manager{% endblock %}
+{% block nav_admin_roles %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-hero {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 3.5rem 2rem;
+        border-radius: 20px;
+        background: var(--bg-card);
+        border: 1px solid rgba(239,68,68,0.25);
+        box-shadow: 0 0 40px rgba(239,68,68,0.08), inset 0 0 60px rgba(239,68,68,0.03);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        text-decoration: none;
+        color: var(--text-primary);
+    }
+    .admin-hero:hover {
+        border-color: rgba(239,68,68,0.5);
+        box-shadow: 0 0 60px rgba(239,68,68,0.15), inset 0 0 80px rgba(239,68,68,0.05);
+        color: var(--text-primary);
+        transform: translateY(-2px);
+    }
+    .admin-hero-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(220,38,38,0.15));
+        border: 1px solid rgba(239,68,68,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.2rem;
+        color: #f87171;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 0 30px rgba(239,68,68,0.15);
+    }
+    .admin-hero-title {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 800;
+        font-size: 1.75rem;
+        letter-spacing: -0.5px;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+    .admin-hero-desc {
+        font-size: 0.95rem;
+        color: var(--text-secondary);
+        margin-bottom: 1.75rem;
+        max-width: 360px;
+    }
+    .admin-hero-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.65rem 1.5rem;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.9rem;
+        font-family: 'Outfit', sans-serif;
+        letter-spacing: 0.02em;
+        border: none;
+        box-shadow: 0 4px 16px rgba(239,68,68,0.3);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .admin-hero:hover .admin-hero-btn {
+        opacity: 0.9;
+        transform: translateX(3px);
+    }
+    .admin-notice {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 1rem 1.25rem;
+        border-radius: 12px;
+        background: rgba(239,68,68,0.06);
+        border: 1px solid rgba(239,68,68,0.15);
+        margin-top: 1.5rem;
+    }
+    .admin-notice i {
+        color: #f87171;
+        font-size: 1rem;
+        margin-top: 0.05rem;
+        flex-shrink: 0;
+    }
+    .admin-notice p {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin: 0;
+        line-height: 1.55;
+    }
+    .admin-notice strong {
+        color: #f87171;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header animate-in delay-1">
+    <h1 style="background: linear-gradient(135deg, #f87171 0%, #ef4444 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+        Admin Panel
+    </h1>
+    <p class="page-subtitle">System administration — role management only</p>
+</div>
+
+<div class="animate-in delay-2">
+    <a href="{% url 'manage_roles' %}" class="admin-hero">
+        <div class="admin-hero-icon">
+            <i class="bi bi-shield-fill-check"></i>
+        </div>
+        <div class="admin-hero-title">Manage User Roles</div>
+        <p class="admin-hero-desc">View all users and assign exec or member roles. Team assignments are shown for reference.</p>
+        <span class="admin-hero-btn">
+            Open Role Manager <i class="bi bi-arrow-right"></i>
+        </span>
+    </a>
+
+    <div class="admin-notice animate-in delay-3">
+        <i class="bi bi-info-circle-fill"></i>
+        <p>
+            <strong>Admin accounts are restricted to role management only.</strong>
+            Features such as messaging, tasks, team chat, and profile editing are not available for this account type.
+            To grant or revoke admin status, use the Django Admin panel.
+        </p>
+    </div>
+</div>
+{% endblock %}

@@ -10,6 +10,7 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('exec/', views.exec_dashboard, name='exec_dashboard'),
     path('member/', views.member_dashboard, name='member_dashboard'),
+    path('admin-panel/', views.admin_dashboard, name='admin_dashboard'),
     path('profile/', views.profile, name='profile'),
     path('tasks/', views.tasks, name='tasks'),
     path('manage-roles/', views.manage_roles, name='manage_roles'),
@@ -24,6 +25,20 @@ urlpatterns = [
     path('tasks/add/', views.add_task, name='add_task'),
     path('tasks/<int:task_id>/remove/', views.remove_task, name='remove_task'),
     path('tasks/<int:task_id>/edit/', views.edit_task, name='edit_task'),
+    path('announcements/', views.announcement_history, name='announcement_history'),
+    path('announcements/mark-read/<int:announcement_id>/', views.mark_announcement_read, name='mark_announcement_read'),
+    path('announcements/mark-all-read/', views.mark_all_announcements_read, name='mark_all_announcements_read'),
+    path('announcements/unmark-read/<int:announcement_id>/', views.unmark_announcement_read, name='unmark_announcement_read'),
+    path('announcements/send-to-team/<int:team_id>/', views.send_team_announcement, name='send_team_announcement'),
+    path('attendance/generate/', views.attendance_generate, name='attendance_generate'),
+    path('attendance/end/', views.attendance_end, name='attendance_end'),
+    path('attendance/submit/', views.attendance_submit, name='attendance_submit'),
+    path('attendance/status/', views.attendance_status, name='attendance_status'),
+    path('attendance/records/', views.attendance_records, name='attendance_records'),
+    path('attendance/records/page/', views.attendance_records_page, name='attendance_records_page'),
+    path('attendance/records/csv/', views.attendance_records_csv, name='attendance_records_csv'),
+    path('attendance/live/', views.attendance_live, name='attendance_live'),
+    path('attendance/members-status/', views.attendance_members_status, name='attendance_members_status'),
 ]
 
 if settings.DEBUG:

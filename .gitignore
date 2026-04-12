@@ -16,3 +16,7 @@ __pycache__/
 # Uploaded files
 media/
 message_attachments/
+
+CLAUDE.md
+
+.venv/
