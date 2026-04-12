@@ -16,3 +16,5 @@ media/
 message_attachments/
 
 CLAUDE.md
+
+.venv/

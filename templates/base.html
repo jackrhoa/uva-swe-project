@@ -1060,7 +1060,9 @@
                             <div class="user-chip" data-bs-toggle="dropdown" aria-expanded="false">
                                 <div class="user-chip-avatar">
                                     {% if request.user.profile.avatar %}
-                                        <img src="{{ request.user.profile.avatar.url }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">
+                                        <img src="{{ request.user.profile.avatar.url }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;"
+                                             onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+                                        <span style="display:none;">{{ request.user.first_name|make_list|first|default:"?" }}</span>
                                     {% else %}
                                         {{ request.user.first_name|make_list|first|default:"?" }}
                                     {% endif %}

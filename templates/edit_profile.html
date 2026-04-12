@@ -30,12 +30,14 @@
                     <label for="id_avatar" class="btn btn-sm profile-action-btn" style="cursor:pointer;">
                         <i class="bi bi-camera-fill me-1"></i>Change Photo
                     </label>
-                    <input type="file" name="avatar" id="id_avatar" accept="image/*" style="display:none;">
-                    {% if profile.avatar %}
-                    <button type="submit" name="remove_avatar" value="1" class="btn btn-sm" style="background:transparent;border:1px solid var(--danger,#ef4444);color:var(--danger,#ef4444);border-radius:8px;padding:0.3rem 0.8rem;font-size:0.82rem;margin-left:0.4rem;">
-                        <i class="bi bi-trash3 me-1"></i>Remove
+                    <input type="file" name="avatar" id="id_avatar" accept=".jpg,.jpeg,.png,.gif,.webp" style="display:none;">
+                    <input type="hidden" name="remove_avatar" id="remove_avatar_input" value="">
+                    <button type="button"
+                            id="btn-reset-avatar"
+                            class="btn btn-sm profile-action-btn"
+                            style="margin-left:0.4rem;{% if not profile.avatar %}display:none;{% endif %}">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset to Default
                     </button>
-                    {% endif %}
                 </div>
 
                 <div class="mb-3">
@@ -62,9 +64,16 @@
 </div>
 
 <script>
-    document.getElementById('id_avatar').addEventListener('change', function () {
+    const avatarInput = document.getElementById('id_avatar');
+    const resetBtn = document.getElementById('btn-reset-avatar');
+    const removeInput = document.getElementById('remove_avatar_input');
+    const existingAvatarUrl = '{% if profile.avatar %}{{ profile.avatar.url }}{% endif %}';
+
+    avatarInput.addEventListener('change', function () {
         const file = this.files[0];
         if (!file) return;
+        // If a reset was previously staged, undo it
+        removeInput.value = '';
         const reader = new FileReader();
         reader.onload = function (e) {
             const preview = document.getElementById('avatar-preview');
@@ -74,6 +83,25 @@
             if (placeholder) placeholder.style.display = 'none';
         };
         reader.readAsDataURL(file);
+        resetBtn.style.display = '';
+    });
+
+    resetBtn.addEventListener('click', function () {
+        const preview = document.getElementById('avatar-preview');
+        const placeholder = document.getElementById('avatar-placeholder');
+
+        // Clear any pending file upload
+        avatarInput.value = '';
+
+        // Stage the removal — only takes effect when Save Changes is clicked
+        removeInput.value = '1';
+
+        // Revert preview to placeholder
+        preview.style.display = 'none';
+        if (placeholder) placeholder.style.display = 'inline-flex';
+
+        // Hide the reset button since there's nothing to reset to
+        resetBtn.style.display = 'none';
     });
 </script>
 {% endblock %}

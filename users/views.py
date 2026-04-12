@@ -135,6 +135,16 @@ def edit_profile(request):
         else:
             avatar_file = request.FILES.get('avatar')
             if avatar_file:
+                import os
+                allowed_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
+                ext = os.path.splitext(avatar_file.name)[1].lower()
+                if ext not in allowed_extensions:
+                    from django.contrib import messages
+                    messages.error(request, f'Unsupported file type "{ext}". Please upload a JPEG, PNG, GIF, or WEBP image.')
+                    return render(request, 'edit_profile.html', {
+                        'form': ProfileNameForm(request.POST, instance=request.user),
+                        'profile': prof,
+                    })
                 prof.avatar = avatar_file
                 prof.save()
         return redirect('profile')
