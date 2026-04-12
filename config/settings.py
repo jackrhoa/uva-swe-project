@@ -190,4 +190,4 @@ SITE_NAME        = 'CIO Manager'
 
 # For local dev, swap smtp backend for console backend so emails
 # print to your terminal instead of actually sending:
-#   EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
