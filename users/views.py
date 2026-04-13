@@ -433,9 +433,10 @@ def edit_task(request, task_id):
             'deadline':          task.deadline.isoformat() if task.deadline else None,
             'active_users': [
                 {
-                    'id':      u.id,
-                    'name':    u.get_full_name() or u.username,
-                    'initial': (u.first_name[:1] or u.username[:1]).upper(),
+                    'id':        u.id,
+                    'name':      u.get_full_name() or u.username,
+                    'initial':   ((u.first_name[:1] or u.username[:1]) + u.last_name[:1]).upper(),
+                    'avatar_url': u.profile.avatar.url if hasattr(u, 'profile') and u.profile.avatar else '',
                 }
                 for u in task.active_users.all()
             ],
@@ -547,14 +548,13 @@ def attendance_records(request):
     for attempt in qs:
         u = attempt.user
         name = u.get_full_name() or u.username
-        initial = (u.first_name[:1] or u.username[:1]).upper()
+        initial = ((u.first_name[:1] or u.username[:1]) + u.last_name[:1]).upper()
         team_name = u.profile.team.name if hasattr(u, 'profile') else '—'
         rows.append({
             'initial': initial,
             'name': name,
             'team': team_name,
-            'date': attempt.submitted_at.strftime('%b %d, %Y'),
-            'time': attempt.submitted_at.strftime('%I:%M %p'),
+            'submitted_at': attempt.submitted_at.isoformat(),
             'code': attempt.code_entered,
             'result': 'success' if attempt.success else 'failed',
         })
@@ -612,7 +612,7 @@ def attendance_members_status(request):
     rows = []
     for u in members:
         name = u.get_full_name() or u.username
-        initial = (u.first_name[:1] or u.username[:1]).upper()
+        initial = ((u.first_name[:1] or u.username[:1]) + u.last_name[:1]).upper()
         team_name = u.profile.team.name if hasattr(u, 'profile') else '—'
         rows.append({
             'id': u.id,
@@ -636,9 +636,16 @@ def attendance_records_csv(request):
     """Exec only: download filtered attendance records as a CSV file."""
     import csv
     from django.http import HttpResponse
+    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
     if not request.user.profile.is_exec():
         return redirect('home')
+
+    tz_name = request.GET.get('tz', 'UTC')
+    try:
+        tz = ZoneInfo(tz_name)
+    except (ZoneInfoNotFoundError, KeyError):
+        tz = ZoneInfo('America/New_York')
 
     team_filter = request.GET.get('team', '')
     result_filter = request.GET.get('result', 'all')
@@ -665,11 +672,12 @@ def attendance_records_csv(request):
         u = attempt.user
         name = u.get_full_name() or u.username
         team_name = u.profile.team.name if hasattr(u, 'profile') else ''
+        local_dt = attempt.submitted_at.astimezone(tz)
         writer.writerow([
             name,
             team_name,
-            attempt.submitted_at.strftime('%Y-%m-%d'),
-            attempt.submitted_at.strftime('%I:%M %p'),
+            local_dt.strftime('%Y-%m-%d'),
+            local_dt.strftime('%I:%M %p'),
             attempt.code_entered,
             'Success' if attempt.success else 'Failed',
         ])

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Manage Roles — CIO Manager{% endblock %}
-{% block nav_roles %}active{% endblock %}
+{% block nav_admin_roles %}active{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -97,7 +97,7 @@
                             {% if user_profile.avatar %}
                                 <img src="{{ user_profile.avatar.url }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">
                             {% else %}
-                                {{ user_profile.user.first_name|make_list|first|default:"?" }}
+                                {{ user_profile.user.first_name|make_list|first }}{{ user_profile.user.last_name|make_list|first }}
                             {% endif %}
                         </div>
                         <div>

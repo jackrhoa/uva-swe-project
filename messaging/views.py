@@ -29,7 +29,6 @@ def get_allowed_users(current_user):
             User.objects
             .exclude(pk=current_user.pk)
             .exclude(profile__role='admin')
-            .exclude(profile__team_id=no_team_id)
             .select_related('profile')
         )
 

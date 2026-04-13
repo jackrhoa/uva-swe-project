@@ -250,6 +250,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const attRecordsTbody = document.getElementById('attRecordsTbody');
     const attCsvBtn       = document.getElementById('attCsvBtn');
 
+    const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    function formatLocalDate(isoStr) {
+        const d = new Date(isoStr);
+        return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric', timeZone: userTz });
+    }
+
+    function formatLocalTime(isoStr) {
+        const d = new Date(isoStr);
+        return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: userTz });
+    }
+
     // Load records from JSON API then render
     async function loadRecords() {
         attRecordsTbody.innerHTML = '<tr><td colspan="7" class="att-no-records">Loading…</td></tr>';
@@ -268,8 +280,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td><div class="att-user-icon">${row.initial}</div></td>
                     <td style="color:var(--text-primary);font-weight:600;">${row.name}</td>
                     <td>${row.team}</td>
-                    <td>${row.date}</td>
-                    <td>${row.time}</td>
+                    <td>${formatLocalDate(row.submitted_at)}</td>
+                    <td>${formatLocalTime(row.submitted_at)}</td>
                     <td><span class="att-code-cell">${row.code}</span></td>
                     <td>
                         <span class="att-result-badge ${row.result}">
@@ -288,11 +300,11 @@ document.addEventListener('DOMContentLoaded', () => {
     attFilterTeam.addEventListener('change', loadRecords);
     attFilterResult.addEventListener('change', loadRecords);
 
-    // CSV download — points at the CSV endpoint with current filters
+    // CSV download — points at the CSV endpoint with current filters and user timezone
     function updateCsvLink() {
         const team   = attFilterTeam.value;
         const result = attFilterResult.value;
-        attCsvBtn.href = `{% url 'attendance_records_csv' %}?team=${encodeURIComponent(team)}&result=${encodeURIComponent(result)}`;
+        attCsvBtn.href = `{% url 'attendance_records_csv' %}?team=${encodeURIComponent(team)}&result=${encodeURIComponent(result)}&tz=${encodeURIComponent(userTz)}`;
     }
 
     attFilterTeam.addEventListener('change', updateCsvLink);

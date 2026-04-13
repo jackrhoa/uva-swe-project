@@ -22,11 +22,11 @@
                     <img src="{{ picture }}" alt="Profile Picture" class="profile-avatar"
                          onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
                     <div class="profile-avatar-placeholder" style="display:none;">
-                        <i class="bi bi-person-fill"></i>
+                        {{ request.user.first_name|make_list|first }}{{ request.user.last_name|make_list|first }}
                     </div>
                 {% else %}
                     <div class="profile-avatar-placeholder">
-                        <i class="bi bi-person-fill"></i>
+                        {{ request.user.first_name|make_list|first }}{{ request.user.last_name|make_list|first }}
                     </div>
                 {% endif %}
                 <div class="flex-grow-1">
