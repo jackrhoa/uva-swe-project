@@ -193,6 +193,14 @@ def send_message(request, conversation_id):
                 if conversation.user1 == request.user
                 else conversation.user1
             )
+
+            from users.notifications import notify_exec_direct_message
+            notify_exec_direct_message(
+                sender=request.user,
+                recipient=recipient,
+                message_body=message.content,
+            )
+
             if recipient:
                 channel_layer = get_channel_layer()
                 async_to_sync(channel_layer.group_send)(
@@ -305,8 +313,6 @@ def team_chat(request):
     is_exec = profile.is_exec()
     no_team_id = get_default_team()
 
-    # Execs can view any team via ?team=<id>; default to their own team if it's real,
-    # otherwise fall back to the first available real team
     if is_exec:
         if request.GET.get('team'):
             team = get_object_or_404(Team, id=request.GET.get('team'))
@@ -358,7 +364,6 @@ def team_chat(request):
     all_teams = None
     if is_exec:
         teams_qs = Team.objects.exclude(id=no_team_id).order_by('name')
-        # Fetch last non-deleted message per team conversation in bulk
         team_ids = list(teams_qs.values_list('id', flat=True))
         last_msgs = {}
         for tc in TeamConversation.objects.filter(team_id__in=team_ids).prefetch_related(
@@ -427,7 +432,6 @@ def delete_team_message(request, message_id):
 def send_team_message(request, team_conversation_id):
     profile = request.user.profile
 
-    # Execs can send to any team; members can only send to their own team
     if profile.is_exec():
         team_conversation = get_object_or_404(TeamConversation, id=team_conversation_id)
     else:

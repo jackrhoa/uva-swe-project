@@ -34,12 +34,11 @@ def admin_dashboard(request):
 def exec_dashboard(request):
     if not request.user.profile.is_exec():
         return redirect('member_dashboard')
- 
+
     if request.method == 'POST':
         body = request.POST.get('body', '').strip()
-        # team_ids is a list of selected team id strings, or ['__all__']
         team_ids = request.POST.getlist('target_teams')
- 
+
         if body:
             if '__all__' in team_ids:
                 ann = Announcement.objects.create(
@@ -47,7 +46,8 @@ def exec_dashboard(request):
                     sent_by=request.user,
                     target=Announcement.TARGET_ALL,
                 )
-                # target_teams stays empty — target='all' covers everyone
+                from .notifications import notify_announcement
+                notify_announcement(ann)
             else:
                 ann = Announcement.objects.create(
                     body=body,
@@ -56,9 +56,11 @@ def exec_dashboard(request):
                 )
                 valid_ids = [tid for tid in team_ids if tid.isdigit()]
                 ann.target_teams.set(Team.objects.filter(id__in=valid_ids))
- 
+                from .notifications import notify_announcement
+                notify_announcement(ann)
+
         return redirect('exec_dashboard')
- 
+
     all_teams = Team.objects.all().order_by('name')
     active_session = AttendanceSession.get_active()
     unread_announcements = get_announcements_for_user(request.user).exclude(
@@ -71,18 +73,17 @@ def exec_dashboard(request):
         'all_teams': all_teams,
         'active_session': active_session,
     })
- 
+
 @login_required
 def member_dashboard(request):
     if request.user.profile.is_exec():
         return redirect('exec_dashboard')
- 
+
     unread_announcements = get_announcements_for_user(request.user).exclude(
         reads__user=request.user
     )
     active_session = AttendanceSession.get_active()
 
-    # Determine member's attendance status for the active session
     member_checked_off = False
     if active_session:
         member_checked_off = active_session.attempts.filter(
@@ -95,7 +96,7 @@ def member_dashboard(request):
         'active_session': active_session,
         'member_checked_off': member_checked_off,
     })
- 
+
 @login_required
 def send_team_announcement(request, team_id):
     """Exec only: create an announcement targeted at a specific team."""
@@ -225,7 +226,7 @@ def manage_teams(request):
         return redirect('home')
     teams = Team.objects.all()
     users = UserProfile.objects.select_related('user').exclude(role='admin')
-    return render(request, 'manage_teams.html', {'users': users , 'teams': teams})
+    return render(request, 'manage_teams.html', {'users': users, 'teams': teams})
 
 @login_required
 def change_team(request, user_id):
@@ -313,24 +314,22 @@ def tasks(request):
         return redirect('admin_dashboard')
     team = request.user.profile.team
     from django.db.models import Q, Case, When, Value, IntegerField
- 
+
     all_tasks = Task.objects.filter(team=team)
- 
-    # Visibility: exec sees all; members see whole_team tasks or tasks assigned to them
+
     if request.user.profile.is_exec():
         visible = all_tasks
     else:
         visible = all_tasks.filter(
             Q(whole_team=True) | Q(active_users=request.user)
         ).distinct()
- 
-    # Undetermined (priority=0) always first, then highest priority, then name
+
     priority_order = Case(
         When(priority=0, then=Value(0)),
         default=Value(1),
         output_field=IntegerField()
     )
- 
+
     uncompleted_tasks = (
         visible
         .filter(actions_completed__lt=models.F('total_actions'))
@@ -341,10 +340,10 @@ def tasks(request):
         .filter(actions_completed__gte=models.F('total_actions'))
         .order_by('-priority', 'name')
     )
- 
+
     team_members = User.objects.filter(profile__team=team).exclude(profile__role='admin')
     now = timezone.now()
- 
+
     return render(request, 'tasks.html', {
         'uncompleted_tasks': uncompleted_tasks,
         'completed_tasks':   completed_tasks,
@@ -355,24 +354,22 @@ def tasks(request):
     })
 
 
-# Exec-only: Add a blank task
 @login_required
 def add_task(request):
     if not request.user.profile.is_exec():
         return redirect('tasks')
- 
+
     Task.objects.create(
         name="New Task",
         description="",
         team=request.user.profile.team,
         total_actions=1,
         actions_completed=0,
-        priority=0   # Undetermined by default
+        priority=0
     )
     return redirect('tasks')
 
 
-# Exec-only: Remove task
 @login_required
 def remove_task(request, task_id):
     if not request.user.profile.is_exec():
@@ -386,44 +383,46 @@ def remove_task(request, task_id):
 @login_required
 def edit_task(request, task_id):
     task = get_object_or_404(Task, id=task_id, team=request.user.profile.team)
- 
+
     if request.method == 'POST':
         data = json.loads(request.body)
- 
+
         if request.user.profile.is_exec():
             task.name          = data.get('name', task.name)
             task.description   = data.get('description', task.description)
             task.total_actions = int(data.get('total_actions', task.total_actions))
             task.priority      = int(data.get('priority', task.priority))
- 
-            # Deadline: empty string clears it, ISO string sets it
+
             deadline_raw = data.get('deadline', None)
             if deadline_raw == '' or deadline_raw is None:
-                if 'deadline' in data:   # key present but empty → clear
+                if 'deadline' in data:
                     task.deadline = None
             else:
                 from django.utils.dateparse import parse_datetime
                 parsed = parse_datetime(deadline_raw)
                 if parsed:
-                    # Make timezone-aware if USE_TZ=True and parsed is naive
                     if timezone.is_naive(parsed):
                         parsed = timezone.make_aware(parsed)
                     task.deadline = parsed
- 
+
             whole_team = data.get('whole_team', False)
             task.whole_team = whole_team
- 
+
             if whole_team:
                 task.active_users.clear()
             elif 'active_users' in data:
                 ids = [int(i) for i in data['active_users'] if i]
                 task.active_users.set(User.objects.filter(id__in=ids, profile__team=task.team))
- 
+
         if 'actions_completed' in data:
             task.actions_completed = max(0, min(int(data['actions_completed']), task.total_actions))
- 
+
         task.save()
- 
+
+        if task.actions_completed >= task.total_actions:
+            from .notifications import notify_task_completed
+            notify_task_completed(task)
+
         return JsonResponse({
             'name':              task.name,
             'description':       task.description,
@@ -442,7 +441,7 @@ def edit_task(request, task_id):
                 for u in task.active_users.all()
             ],
         })
- 
+
     return JsonResponse({'error': 'Invalid method'}, status=400)
 
 
@@ -456,7 +455,6 @@ def attendance_generate(request):
     if request.method != 'POST':
         return JsonResponse({'ok': False}, status=405)
 
-    # End any currently active session first
     AttendanceSession.objects.filter(is_active=True).update(
         is_active=False, ended_at=timezone.now()
     )
@@ -510,10 +508,6 @@ def attendance_submit(request):
 
 @login_required
 def attendance_status(request):
-    """
-    Polling endpoint used by both exec and member dashboards.
-    Returns whether a session is live and (for members) if they're checked off.
-    """
     active_session = AttendanceSession.get_active()
     if not active_session:
         return JsonResponse({'is_active': False})
@@ -535,8 +529,8 @@ def attendance_records(request):
     if not request.user.profile.is_exec():
         return JsonResponse({'ok': False, 'error': 'Forbidden'}, status=403)
 
-    team_filter = request.GET.get('team', '')   # team id or '' = all
-    result_filter = request.GET.get('result', 'all')  # 'all' | 'success' | 'fail'
+    team_filter = request.GET.get('team', '')
+    result_filter = request.GET.get('result', 'all')
 
     qs = AttendanceAttempt.objects.select_related(
         'user', 'user__profile', 'user__profile__team', 'session'

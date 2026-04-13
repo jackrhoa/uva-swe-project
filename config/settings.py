@@ -174,3 +174,20 @@ AWS_S3_FILE_OVERWRITE = False
 AWS_DEFAULT_ACL = None
 AWS_QUERYSTRING_AUTH = True
 
+# DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+
+
+# EMAIL SETTINGS
+
+EMAIL_BACKEND    = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST       = 'smtp.gmail.com'
+EMAIL_PORT       = 587
+EMAIL_USE_TLS    = True
+EMAIL_HOST_USER  = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = f'CIO Manager <{os.environ.get("EMAIL_HOST_USER", "")}>'
+SITE_NAME        = 'CIO Manager'
+
+# For local dev, swap smtp backend for console backend so emails
+# print to your terminal instead of actually sending:
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
