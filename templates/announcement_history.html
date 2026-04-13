@@ -174,7 +174,7 @@ html[data-theme="light"] .ann-card.ann-unread {
                 <span class="ann-card-label">
                     <i class="bi bi-megaphone-fill"></i> Announcement
                 </span>
-                <span class="ann-card-date">{{ ann.sent_at|date:"M j, Y · g:i a" }}</span>
+                <span class="ann-card-date ann-ts" data-utc="{{ ann.sent_at.isoformat }}">{{ ann.sent_at|date:"M j, Y · g:i a" }}</span>
             </div>
 
             <div class="ann-card-body">{{ ann.body }}</div>
@@ -215,6 +215,17 @@ html[data-theme="light"] .ann-card.ann-unread {
 
 {% block extra_js %}
 <script>
+// Convert announcement timestamps to browser local time
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.ann-ts').forEach(el => {
+        const d = new Date(el.dataset.utc);
+        if (isNaN(d)) return;
+        const date = d.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+        const time = d.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+        el.textContent = date + ' · ' + time;
+    });
+});
+
 function markAllRead() {
     fetch('/announcements/mark-all-read/', {
         method: 'POST',

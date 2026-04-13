@@ -550,11 +550,18 @@ def attendance_records(request):
         name = u.get_full_name() or u.username
         initial = ((u.first_name[:1] or u.username[:1]) + u.last_name[:1]).upper()
         team_name = u.profile.team.name if hasattr(u, 'profile') else '—'
+        avatar_url = ''
+        try:
+            if u.profile.avatar:
+                avatar_url = u.profile.avatar.url
+        except Exception:
+            pass
         rows.append({
             'initial': initial,
+            'avatar_url': avatar_url,
             'name': name,
             'team': team_name,
-            'submitted_at': attempt.submitted_at.isoformat(),
+            'submitted_at': attempt.submitted_at.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z'),
             'code': attempt.code_entered,
             'result': 'success' if attempt.success else 'failed',
         })

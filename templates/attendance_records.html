@@ -243,6 +243,10 @@ html[data-theme="light"] .att-result-badge.failed {
 </div>
 
 <script>
+function escapeHtml(str) {
+    return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
 
     const attFilterTeam   = document.getElementById('attFilterTeam');
@@ -277,7 +281,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             attRecordsTbody.innerHTML = data.rows.map(row => `
                 <tr>
-                    <td><div class="att-user-icon">${row.initial}</div></td>
+                    <td>
+                        <div class="att-user-icon" style="padding:0;overflow:hidden;">
+                            ${row.avatar_url
+                                ? `<img src="${row.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">`
+                                : escapeHtml(row.initial)
+                            }
+                        </div>
+                    </td>
                     <td style="color:var(--text-primary);font-weight:600;">${row.name}</td>
                     <td>${row.team}</td>
                     <td>${formatLocalDate(row.submitted_at)}</td>

@@ -430,7 +430,7 @@ html[data-theme="light"] .att-code-slot.filled {
                 <div class="ann-unread-body">{{ ann.body }}</div>
                 <div class="ann-unread-footer">
                     <span class="ann-unread-meta">
-                        {{ ann.sent_by.get_full_name|default:ann.sent_by.username }} · {{ ann.sent_at|date:"M j, Y · g:i a" }}
+                        {{ ann.sent_by.get_full_name|default:ann.sent_by.username }} · <span class="ann-ts" data-utc="{{ ann.sent_at.isoformat }}">{{ ann.sent_at|date:"M j, Y · g:i a" }}</span>
                         {% if ann.target == 'all' %}
                             · <span class="ann-target-chip"><i class="bi bi-globe2"></i> All Teams</span>
                         {% else %}
@@ -619,6 +619,15 @@ html[data-theme="light"] .att-code-slot.filled {
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+
+    // ── Convert announcement timestamps to browser local time ──
+    document.querySelectorAll('.ann-ts').forEach(el => {
+        const d = new Date(el.dataset.utc);
+        if (isNaN(d)) return;
+        const date = d.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+        const time = d.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+        el.textContent = date + ' · ' + time;
+    });
 
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
