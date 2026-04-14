@@ -157,6 +157,9 @@ def message_list(request):
 
 @login_required
 def start_conversation(request):
+    if request.user.profile.is_admin():
+        return redirect('admin_dashboard')
+
     allowed_users = get_allowed_users(request.user)
 
     if request.method == 'POST':
@@ -172,6 +175,9 @@ def start_conversation(request):
 
 @login_required
 def send_message(request, conversation_id):
+    if request.user.profile.is_admin():
+        return redirect('admin_dashboard')
+
     conversation = get_object_or_404(
         Conversation.objects.filter(
             Q(user1=request.user) | Q(user2=request.user)
@@ -250,6 +256,9 @@ def send_message(request, conversation_id):
 
 @login_required
 def delete_message(request, message_id):
+    if request.user.profile.is_admin():
+        return redirect('admin_dashboard')
+
     message = get_object_or_404(Message, id=message_id, sender=request.user)
 
     if request.method == 'POST':
@@ -401,6 +410,9 @@ def team_chat(request):
 
 @login_required
 def delete_team_message(request, message_id):
+    if request.user.profile.is_admin():
+        return redirect('admin_dashboard')
+
     message = get_object_or_404(TeamMessage, id=message_id, sender=request.user)
 
     if request.method == 'POST':
@@ -431,6 +443,9 @@ def delete_team_message(request, message_id):
 @login_required
 def send_team_message(request, team_conversation_id):
     profile = request.user.profile
+
+    if profile.is_admin():
+        return redirect('admin_dashboard')
 
     if profile.is_exec():
         team_conversation = get_object_or_404(TeamConversation, id=team_conversation_id)
