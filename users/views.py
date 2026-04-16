@@ -298,6 +298,45 @@ def edit_profile(request):
     })
 
 @login_required
+def exec_edit_user(request, user_id):
+    if not request.user.profile.is_exec():
+        return redirect('home')
+
+    target_profile = get_object_or_404(UserProfile, user__id=user_id)
+    if target_profile.is_admin():
+        return redirect('manage_teams')
+
+    if request.method == 'POST':
+        form = ProfileNameForm(request.POST, instance=target_profile.user)
+        if form.is_valid():
+            form.save()
+        if request.POST.get('remove_avatar'):
+            target_profile.avatar.delete(save=True)
+        else:
+            avatar_file = request.FILES.get('avatar')
+            if avatar_file:
+                import os
+                allowed_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
+                ext = os.path.splitext(avatar_file.name)[1].lower()
+                if ext not in allowed_extensions:
+                    from django.contrib import messages
+                    messages.error(request, f'Unsupported file type "{ext}". Please upload a JPEG, PNG, GIF, or WEBP image.')
+                    return render(request, 'exec_edit_user.html', {
+                        'form': ProfileNameForm(request.POST, instance=target_profile.user),
+                        'target_profile': target_profile,
+                    })
+                target_profile.avatar = avatar_file
+                target_profile.save()
+        return redirect('manage_teams')
+
+    form = ProfileNameForm(instance=target_profile.user)
+    return render(request, 'exec_edit_user.html', {
+        'form': form,
+        'target_profile': target_profile,
+    })
+
+
+@login_required
 def delete_account(request):
     if request.user.profile.is_exec():
         return redirect('profile')

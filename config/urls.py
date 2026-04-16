@@ -20,6 +20,7 @@ urlpatterns = [
     path('add-team/', views.add_team, name='add_team'),
     path('delete-team/<int:team_id>/', views.delete_team, name='delete_team'),
     path('profile/edit/', views.edit_profile, name='edit_profile'),
+    path('profile/edit/<int:user_id>/', views.exec_edit_user, name='exec_edit_user'),
     path('profile/delete/', views.delete_account, name='delete_account'),
     path('messages/', include('messaging.urls')),
     path('tasks/add/', views.add_task, name='add_task'),
