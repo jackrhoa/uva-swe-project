@@ -195,7 +195,7 @@ def profile(request):
 def manage_roles(request):
     if not request.user.profile.is_admin():
         return redirect('home')
-    users = UserProfile.objects.select_related('user', 'team').all()
+    users = UserProfile.objects.select_related('user', 'team').exclude(user__is_superuser=True)
     return render(request, 'manage_roles.html', {'users': users})
 
 @login_required
@@ -227,7 +227,7 @@ def manage_teams(request):
     if not request.user.profile.is_exec():
         return redirect('home')
     teams = Team.objects.all()
-    users = UserProfile.objects.select_related('user').exclude(role='admin')
+    users = UserProfile.objects.select_related('user').exclude(role='admin').exclude(user__is_superuser=True)
     return render(request, 'manage_teams.html', {'users': users, 'teams': teams})
 
 @login_required

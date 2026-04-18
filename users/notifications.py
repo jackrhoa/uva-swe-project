@@ -8,6 +8,10 @@ def _site_name():
     return getattr(settings, 'SITE_NAME', 'CIO Manager')
  
  
+def _email_enabled():
+    return bool(getattr(settings, 'EMAIL_HOST_USER', ''))
+
+
 def _from_addr():
     return getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@example.com')
  
@@ -18,13 +22,15 @@ def notify_announcement(announcement):
     """
     Call this right after an Announcement is saved.
     Emails every user who can see the announcement.
- 
+
     Usage in views.py (exec_dashboard POST):
         ann = Announcement.objects.create(...)
         ann.target_teams.set(...)
         from .notifications import notify_announcement
         notify_announcement(ann)
     """
+    if not _email_enabled():
+        return
     from django.contrib.auth.models import User
     from django.db.models import Q
  
@@ -73,16 +79,8 @@ def notify_announcement(announcement):
 # ── 2. Task completed ─────────────────────────────────────────────────────────
  
 def notify_task_completed(task):
-    """
-    Call this when a task's status is set to 'completed'.
-    Emails every user assigned to the task.
- 
-    Usage in views.py (wherever task completion is handled):
-        task.status = 'completed'
-        task.save()
-        from .notifications import notify_task_completed
-        notify_task_completed(task)
-    """
+    if not _email_enabled():
+        return
     from django.contrib.auth.models import User
  
     # Build recipient list: support both a single assigned_to user
@@ -122,20 +120,8 @@ def notify_task_completed(task):
 # ── 3. Direct message FROM an exec ───────────────────────────────────────────
  
 def notify_exec_direct_message(sender, recipient, message_body):
-    """
-    Call this when a direct message is sent.
-    Sends an email ONLY if the sender is_exec().
- 
-    Usage (wherever your DM send logic lives):
-        from .notifications import notify_exec_direct_message
-        notify_exec_direct_message(
-            sender=request.user,
-            recipient=target_user,
-            message_body=message_text,
-        )
- 
-    No email is sent if the sender is a regular member.
-    """
+    if not _email_enabled():
+        return
     # Guard: only email when the sender is an exec
     try:
         if not sender.profile.is_exec():

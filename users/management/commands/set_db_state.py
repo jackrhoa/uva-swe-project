@@ -177,12 +177,17 @@ class Command(BaseCommand):
         AnnouncementRead.objects.all().delete()
         Announcement.objects.all().delete()
         sender = self._any_exec()
+        all_users = list(User.objects.filter(is_active=True))
         for body, target, team_name in ANNOUNCEMENTS:
             if target == "specific" and team_name and team_name not in teams:
                 continue
             ann = Announcement.objects.create(body=body, sent_by=sender, target=target)
             if target == "specific" and team_name:
                 ann.target_teams.set([teams[team_name]])
+            AnnouncementRead.objects.bulk_create(
+                [AnnouncementRead(user=u, announcement=ann) for u in all_users],
+                ignore_conflicts=True,
+            )
             self.stdout.write(f"  Announcement: {body[:60]}...")
 
     def _create_attendance(self):
