@@ -40,6 +40,7 @@ urlpatterns = [
     path('attendance/records/csv/', views.attendance_records_csv, name='attendance_records_csv'),
     path('attendance/live/', views.attendance_live, name='attendance_live'),
     path('attendance/members-status/', views.attendance_members_status, name='attendance_members_status'),
+    path('beta-reset-db/', views.beta_reset_db, name='beta_reset_db'),
 ]
 
 if settings.DEBUG:

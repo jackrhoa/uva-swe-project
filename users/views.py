@@ -1,10 +1,12 @@
+import os
 from django.utils import timezone
 from django.db import IntegrityError, models
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseForbidden
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.management import call_command
 from .models import (
     Team, UserProfile, Task, Announcement, AnnouncementRead,
     get_announcement_for_user, get_announcements_for_user,
@@ -729,3 +731,12 @@ def attendance_records_csv(request):
         ])
 
     return response
+
+
+@login_required
+def beta_reset_db(request):
+    allowed = [e.strip() for e in os.environ.get("RESET_DB_ALLOWED_EMAILS", "").split(",") if e.strip()]
+    if request.user.email not in allowed:
+        return HttpResponseForbidden("Not authorized.")
+    call_command("set_db_state")
+    return JsonResponse({"ok": True, "message": "Database seeded successfully."})
