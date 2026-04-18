@@ -127,7 +127,7 @@ class Command(BaseCommand):
             for e in os.environ.get("ALLOWED_USER_EMAILS", "").split(",")
             if e.strip()
         }
-        deleted = User.objects.exclude(email__in=allowed).delete()
+        deleted = User.objects.exclude(email__in=allowed).exclude(is_superuser=True).delete()
         self.stdout.write(f"  Deleted {deleted[0]} user(s) not in ALLOWED_USER_EMAILS.")
 
         for user in User.objects.filter(email__in=allowed):
