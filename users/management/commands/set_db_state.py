@@ -130,8 +130,9 @@ class Command(BaseCommand):
         deleted = User.objects.exclude(email__in=allowed).exclude(is_superuser=True).delete()
         self.stdout.write(f"  Deleted {deleted[0]} user(s) not in ALLOWED_USER_EMAILS.")
 
-        for user in User.objects.filter(email__in=allowed):
-            UserProfile.objects.create(user=user)
+        surviving_users = User.objects.filter(email__in=allowed) | User.objects.filter(is_superuser=True)
+        for user in surviving_users.distinct():
+            UserProfile.objects.get_or_create(user=user)
             self.stdout.write(f"  Recreated profile for {user.email}")
 
         self.stdout.write("  Done.")
