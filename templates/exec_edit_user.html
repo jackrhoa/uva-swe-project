@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Edit User — CIO Manager{% endblock %}
+{% block nav_teams %}active{% endblock %}
+
+{% block content %}
+<div class="page-header animate-in delay-1">
+    <h1>Edit User</h1>
+    <p class="page-subtitle">Update {{ target_profile.user.first_name }} {{ target_profile.user.last_name }}'s name and profile picture</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6 animate-in delay-2">
+        <div class="glass-card">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <!-- Avatar upload -->
+                <div class="mb-4 text-center">
+                    <div style="margin-bottom:0.75rem;">
+                        {% if target_profile.avatar %}
+                            <img id="avatar-preview" src="{{ target_profile.avatar.url }}" alt="Profile picture"
+                                 style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--border-color);display:inline-block;">
+                        {% else %}
+                            <div id="avatar-placeholder" style="width:80px;height:80px;border-radius:50%;background:#4b5563;border:2px solid var(--border-color);display:inline-flex;align-items:center;justify-content:center;color:#d1d5db;font-size:1.4rem;font-weight:700;">
+                                {{ target_profile.user.first_name|make_list|first }}{{ target_profile.user.last_name|make_list|first }}
+                            </div>
+                            <img id="avatar-preview" src="" alt="Profile picture"
+                                 style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--border-color);display:none;">
+                        {% endif %}
+                    </div>
+                    <label for="id_avatar" class="btn btn-sm profile-action-btn" style="cursor:pointer;">
+                        <i class="bi bi-camera-fill me-1"></i>Change Photo
+                    </label>
+                    <input type="file" name="avatar" id="id_avatar" accept=".jpg,.jpeg,.png,.gif,.webp" style="display:none;">
+                    <input type="hidden" name="remove_avatar" id="remove_avatar_input" value="">
+                    <button type="button"
+                            id="btn-reset-avatar"
+                            class="btn btn-sm profile-action-btn"
+                            style="margin-left:0.4rem;{% if not target_profile.avatar %}display:none;{% endif %}">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset to Default
+                    </button>
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.first_name.id_for_label }}" class="form-label">First Name</label>
+                    {{ form.first_name }}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.last_name.id_for_label }}" class="form-label">Last Name</label>
+                    {{ form.last_name }}
+                </div>
+
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i>Save Changes
+                    </button>
+                    <a href="{% url 'manage_teams' %}" class="btn profile-action-btn">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const avatarInput = document.getElementById('id_avatar');
+    const resetBtn = document.getElementById('btn-reset-avatar');
+    const removeInput = document.getElementById('remove_avatar_input');
+
+    avatarInput.addEventListener('change', function () {
+        const file = this.files[0];
+        if (!file) return;
+        removeInput.value = '';
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const preview = document.getElementById('avatar-preview');
+            const placeholder = document.getElementById('avatar-placeholder');
+            preview.src = e.target.result;
+            preview.style.display = 'inline-block';
+            if (placeholder) placeholder.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+        resetBtn.style.display = '';
+    });
+
+    resetBtn.addEventListener('click', function () {
+        const preview = document.getElementById('avatar-preview');
+        const placeholder = document.getElementById('avatar-placeholder');
+        avatarInput.value = '';
+        removeInput.value = '1';
+        preview.style.display = 'none';
+        if (placeholder) placeholder.style.display = 'inline-flex';
+        resetBtn.style.display = 'none';
+    });
+</script>
+{% endblock %}

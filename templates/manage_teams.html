@@ -179,12 +179,15 @@
                             {% endif %}
                         </div>
                         <div>
-                            <div style="font-weight:600;font-size:0.9rem;"> 
-                                {{ user_profile.user.first_name }} {{ user_profile.user.last_name }} 
-                                {% if user_profile.user == request.user %}<span style="font-size:0.72rem;font-weight:500;color:var(--text-muted);"> (you)</span>{% endif %} 
+                            <div style="font-weight:600;font-size:0.9rem;">
+                                {{ user_profile.user.first_name }} {{ user_profile.user.last_name }}
+                                {% if user_profile.user == request.user %}<span style="font-size:0.72rem;font-weight:500;color:var(--text-muted);"> (you)</span>{% endif %}
                             </div>
                             <div style="font-size:0.75rem;color:var(--text-muted);">{{ user_profile.user.email }}</div>
                         </div>
+                        <a href="{% url 'exec_edit_user' user_profile.user.id %}" class="team-delete-btn" title="Edit profile" style="margin-left:0.25rem;color:var(--text-muted);">
+                            <i class="bi bi-pencil" style="font-size:0.8rem;"></i>
+                        </a>
                     </div>
                 </td>
                 <td>
