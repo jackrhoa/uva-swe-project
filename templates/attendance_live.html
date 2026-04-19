@@ -398,7 +398,10 @@ function toggleAttendees() {
     const open = body.classList.toggle('open');
     chevron.classList.toggle('open', open);
     header.classList.toggle('open', open);
-    if (open && allMembers.length === 0) fetchMembers();
+    if (open) {
+        if (allMembers.length === 0) fetchMembers();
+        else renderList();
+    }
 }
 
 function setFilter(filter) {
