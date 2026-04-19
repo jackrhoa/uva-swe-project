@@ -13,10 +13,14 @@ class Team(models.Model):
         return self.name
     
 
+_default_team_id = None
+
 def get_default_team():
-    from .models import Team
-    team, created = Team.objects.get_or_create(name="No Team")
-    return team.id
+    global _default_team_id
+    if _default_team_id is None:
+        team, created = Team.objects.get_or_create(name="No Team")
+        _default_team_id = team.id
+    return _default_team_id
 
 class UserProfile(models.Model):
     ROLE_CHOICES = [
@@ -189,7 +193,7 @@ class AttendanceSession(models.Model):
     is_active=True means the code is currently live.
     """
     code = models.CharField(max_length=6, default=_generate_code)
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=False, db_index=True)
     started_at = models.DateTimeField(null=True, blank=True)
     ended_at = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(
