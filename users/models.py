@@ -13,14 +13,9 @@ class Team(models.Model):
         return self.name
     
 
-_default_team_id = None
-
 def get_default_team():
-    global _default_team_id
-    if _default_team_id is None:
-        team, created = Team.objects.get_or_create(name="No Team")
-        _default_team_id = team.id
-    return _default_team_id
+    team, _ = Team.objects.get_or_create(name="No Team")
+    return team.id
 
 class UserProfile(models.Model):
     ROLE_CHOICES = [
