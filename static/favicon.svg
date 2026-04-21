@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <mask id="cutout">
+      <rect width="512" height="512" fill="white"/>
+      <rect x="128" y="128" width="100" height="100" rx="20" ry="20" fill="black"/>
+      <rect x="284" y="128" width="100" height="100" rx="20" ry="20" fill="black"/>
+      <rect x="128" y="284" width="100" height="100" rx="20" ry="20" fill="black"/>
+      <rect x="284" y="284" width="100" height="100" rx="20" ry="20" fill="black"/>
+    </mask>
+  </defs>
+  <rect width="512" height="512" rx="96" ry="96" fill="#4175F5" mask="url(#cutout)"/>
+</svg>
