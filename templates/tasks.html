@@ -190,6 +190,42 @@ html[data-theme="light"] .task-priority-badge[data-p="2"] { color: #a16207; back
 html[data-theme="light"] .task-priority-badge[data-p="3"] { color: #c2410c; background: rgba(234,88,12,.1); border-color: rgba(234,88,12,.35); }
 html[data-theme="light"] .task-priority-badge[data-p="4"] { color: #dc2626; background: rgba(220,38,38,.1); border-color: rgba(220,38,38,.35); }
 
+/* ── Priority pill picker ── */
+.priority-picker {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.priority-btn {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1.5px solid;
+    cursor: pointer;
+    background: transparent;
+    transition: background 0.15s, color 0.15s;
+}
+.priority-btn[data-val="1"] { border-color: rgba(34,197,94,.5); color: #4ade80; }
+.priority-btn[data-val="2"] { border-color: rgba(234,179,8,.5); color: #facc15; }
+.priority-btn[data-val="3"] { border-color: rgba(249,115,22,.5); color: #fb923c; }
+.priority-btn[data-val="4"] { border-color: rgba(239,68,68,.5); color: #f87171; }
+.priority-btn[data-val="1"].active { background: rgba(34,197,94,.15); }
+.priority-btn[data-val="2"].active { background: rgba(234,179,8,.15); }
+.priority-btn[data-val="3"].active { background: rgba(249,115,22,.15); }
+.priority-btn[data-val="4"].active { background: rgba(239,68,68,.15); }
+html[data-theme="light"] .priority-btn[data-val="1"] { border-color: rgba(22,163,74,.35); color: #16a34a; }
+html[data-theme="light"] .priority-btn[data-val="2"] { border-color: rgba(202,138,4,.35); color: #a16207; }
+html[data-theme="light"] .priority-btn[data-val="3"] { border-color: rgba(234,88,12,.35); color: #c2410c; }
+html[data-theme="light"] .priority-btn[data-val="4"] { border-color: rgba(220,38,38,.35); color: #dc2626; }
+html[data-theme="light"] .priority-btn[data-val="1"].active { background: rgba(22,163,74,.1); }
+html[data-theme="light"] .priority-btn[data-val="2"].active { background: rgba(202,138,4,.1); }
+html[data-theme="light"] .priority-btn[data-val="3"].active { background: rgba(234,88,12,.1); }
+html[data-theme="light"] .priority-btn[data-val="4"].active { background: rgba(220,38,38,.1); }
+
 /* ── Deadline badge on card ── */
 .task-deadline-badge {
     display: inline-flex;
@@ -392,6 +428,11 @@ html[data-theme="light"] .task-deadline-badge.overdue {
 }
 
 /* ── Task modal ── */
+@keyframes modal-fade-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modal-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes modal-scale-in  { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes modal-scale-out { from { transform: scale(1);    opacity: 1; } to { transform: scale(0.95); opacity: 0; } }
+
 .task-modal-overlay {
     display: none;
     position: fixed;
@@ -402,7 +443,8 @@ html[data-theme="light"] .task-deadline-badge.overdue {
     justify-content: center;
     padding: 20px;
 }
-.task-modal-overlay.open { display: flex; }
+.task-modal-overlay.open { display: flex; animation: modal-fade-in 0.18s ease; }
+.task-modal-overlay.closing { display: flex; animation: modal-fade-out 0.2s ease forwards; }
 
 .task-modal {
     background: var(--bg-secondary);
@@ -413,7 +455,9 @@ html[data-theme="light"] .task-deadline-badge.overdue {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    animation: modal-scale-in 0.18s ease;
 }
+.task-modal-overlay.closing .task-modal { animation: modal-scale-out 0.2s ease forwards; }
 .task-modal-header {
     display: flex;
     align-items: center;
@@ -770,14 +814,15 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                         {% endif %}
 
                         {# Priority badge #}
-                        <span class="task-priority-badge" data-p="{{ task.priority|default:0 }}">
-                            {% if task.priority == 0 %}PENDING SETUP
-                            {% elif task.priority == 1 %}LOW
+                        {% if task.priority != 0 %}
+                        <span class="task-priority-badge" data-p="{{ task.priority }}">
+                            {% if task.priority == 1 %}LOW
                             {% elif task.priority == 2 %}MED
                             {% elif task.priority == 3 %}HIGH
                             {% elif task.priority == 4 %}URGENT
                             {% endif %}
                         </span>
+                        {% endif %}
 
                         {% if is_exec %}
                         <div class="exec-controls">
@@ -797,7 +842,7 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                     </div>
                 </div>
 
-                <div class="task-description">{{ task.description|default:"No description provided." }}</div>
+                {% if task.description %}<div class="task-description">{{ task.description }}</div>{% endif %}
 
                 <div class="task-footer">
                     <div class="task-progress">
@@ -880,14 +925,15 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                             </span>
                             {% endif %}
 
-                            <span class="task-priority-badge" data-p="{{ task.priority|default:0 }}">
-                                {% if task.priority == 0 %}PENDING SETUP
-                                {% elif task.priority == 1 %}LOW
+                            {% if task.priority != 0 %}
+                            <span class="task-priority-badge" data-p="{{ task.priority }}">
+                                {% if task.priority == 1 %}LOW
                                 {% elif task.priority == 2 %}MED
                                 {% elif task.priority == 3 %}HIGH
                                 {% elif task.priority == 4 %}URGENT
                                 {% endif %}
                             </span>
+                            {% endif %}
 
                             {% if is_exec %}
                             <div class="exec-controls">
@@ -907,7 +953,7 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                         </div>
                     </div>
 
-                    <div class="task-description">{{ task.description|default:"No description provided." }}</div>
+                    {% if task.description %}<div class="task-description">{{ task.description }}</div>{% endif %}
 
                     <div class="task-footer">
                         <div class="task-progress">
@@ -974,14 +1020,6 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                         <i class="bi bi-chevron-down" style="font-size:0.7rem;flex-shrink:0;"></i>
                     </button>
                     <div class="multi-select-dropdown" id="modalDropdown">
-                        <label class="multi-select-option">
-                            <input type="checkbox" class="member-cb"
-                                   value="__team__"
-                                   data-name="{{ team_name }} (Everyone)"
-                                   data-initial="ALL"
-                                   data-is-team="true">
-                            <span>👥 {{ team_name }} (Everyone)</span>
-                        </label>
                         {% for member in team_members %}
                         <label class="multi-select-option">
                             <input type="checkbox" class="member-cb"
@@ -1003,13 +1041,13 @@ html[data-theme="light"] .task-deadline-badge.overdue {
             <div class="task-modal-grid">
                 <div>
                     <label class="field-label">Priority</label>
-                    <select class="edit-select" id="modalPriority">
-                        <option value="0">🔵 Undetermined</option>
-                        <option value="1">🟢 Low</option>
-                        <option value="2">🟡 Medium</option>
-                        <option value="3">🟠 High</option>
-                        <option value="4">🔴 URGENT</option>
-                    </select>
+                    <div class="priority-picker">
+                        <button type="button" class="priority-btn" data-val="1">Low</button>
+                        <button type="button" class="priority-btn" data-val="2">Med</button>
+                        <button type="button" class="priority-btn" data-val="3">High</button>
+                        <button type="button" class="priority-btn" data-val="4">Urgent</button>
+                    </div>
+                    <input type="hidden" id="modalPriority" value="2">
                 </div>
                 <div>
                     <label class="field-label">Quota (leave 1 if N/A)</label>
@@ -1048,7 +1086,17 @@ document.addEventListener('DOMContentLoaded', () => {
         return el ? el.value : '';
     };
 
-    const PRIORITY_LABELS = { 0: 'PENDING SETUP', 1: 'LOW', 2: 'MED', 3: 'HIGH', 4: 'URGENT' };
+    const PRIORITY_LABELS = { 1: 'LOW', 2: 'MED', 3: 'HIGH', 4: 'URGENT' };
+
+    const priorityBtns = document.querySelectorAll('.priority-btn');
+    const modalPriorityInput = document.getElementById('modalPriority');
+    const setPriorityPicker = (val) => {
+        priorityBtns.forEach(b => b.classList.toggle('active', b.dataset.val === String(val)));
+        if (modalPriorityInput) modalPriorityInput.value = val;
+    };
+    priorityBtns.forEach(btn => {
+        btn.addEventListener('click', () => setPriorityPicker(btn.dataset.val));
+    });
 
     // ── Completed section toggle ──
     const toggle = document.getElementById('completedToggle');
@@ -1155,9 +1203,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (users.length === 0) {
             label.textContent = 'Select members...';
             label.classList.remove('has-selection');
-        } else if (users.some(u => u.isTeam)) {
-            label.textContent = 'Whole team';
-            label.classList.add('has-selection');
         } else if (users.length === 1) {
             label.textContent = users[0].name;
             label.classList.add('has-selection');
@@ -1171,7 +1216,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modalName.value.trim() !== '' ||
         modalComments.value.trim() !== '' ||
         modalDeadline.value !== '' ||
-        modalPriority.value !== '0' ||
+        (modalPriority.value !== '0' && modalPriority.value !== '2') ||
         modalQuota.value !== '1' ||
         modalAssignedUsers.length > 0;
 
@@ -1180,11 +1225,14 @@ document.addEventListener('DOMContentLoaded', () => {
             discardConfirm.classList.add('open');
             return;
         }
-        overlay.classList.remove('open');
         if (modalDropdown) modalDropdown.classList.remove('open');
         if (modalTrigger)  modalTrigger.classList.remove('open');
         document.body.style.overflow = '';
         modalCurrentBox = null;
+        overlay.classList.add('closing');
+        overlay.addEventListener('animationend', () => {
+            overlay.classList.remove('open', 'closing');
+        }, { once: true });
     };
 
     const openModal = (box) => {
@@ -1196,24 +1244,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         modalName.value     = box.dataset.name     || '';
         modalComments.value = box.dataset.description || '';
-        modalPriority.value = box.dataset.priority  || '0';
+        setPriorityPicker(box.dataset.priority || '2');
         modalQuota.value    = box.dataset.totalActions || '1';
         modalDeadline.value = box.dataset.deadline  || '';
 
         const rawIds = (box.dataset.activeUsers || '').split(',').filter(Boolean);
-        const isTeam = box.dataset.wholeTeam === 'true';
         modalAssignedUsers = [];
         modalCheckboxes.forEach(cb => { cb.checked = false; });
 
-        if (isTeam) {
-            const teamCb = modalDropdown.querySelector('.member-cb[data-is-team="true"]');
-            if (teamCb) { teamCb.checked = true; modalAssignedUsers = [{ id: '__team__', name: teamCb.dataset.name, initial: 'ALL', isTeam: true }]; }
-        } else {
-            rawIds.forEach(id => {
-                const cb = modalDropdown.querySelector(`.member-cb[value="${id}"]`);
-                if (cb) { cb.checked = true; modalAssignedUsers.push({ id, name: cb.dataset.name, initial: cb.dataset.initial, isTeam: false }); }
-            });
-        }
+        rawIds.forEach(id => {
+            const cb = modalDropdown.querySelector(`.member-cb[value="${id}"]`);
+            if (cb) { cb.checked = true; modalAssignedUsers.push({ id, name: cb.dataset.name, initial: cb.dataset.initial, isTeam: false }); }
+        });
         updateTriggerLabel(modalAssignedUsers);
         overlay.classList.add('open');
         document.body.style.overflow = 'hidden';
@@ -1229,7 +1271,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         modalName.value     = '';
         modalComments.value = '';
-        modalPriority.value = '0';
+        setPriorityPicker('2');
         modalQuota.value    = '1';
         modalDeadline.value = '';
         modalAssignedUsers  = [];
@@ -1273,18 +1315,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Checkbox handlers
         modalCheckboxes.forEach(cb => {
             cb.addEventListener('change', () => {
-                const isTeamOpt = cb.dataset.isTeam === 'true';
-                if (isTeamOpt) {
-                    if (cb.checked) {
-                        modalCheckboxes.forEach(c => { if (c !== cb) c.checked = false; });
-                        modalAssignedUsers = [{ id: '__team__', name: cb.dataset.name, initial: 'ALL', isTeam: true }];
-                    } else {
-                        modalAssignedUsers = [];
-                    }
-                } else {
-                    const teamCb = modalDropdown.querySelector('.member-cb[data-is-team="true"]');
-                    if (teamCb) teamCb.checked = false;
-                    modalAssignedUsers = modalAssignedUsers.filter(u => !u.isTeam);
+                {
                     if (cb.checked) {
                         modalAssignedUsers.push({ id: cb.value, name: cb.dataset.name, initial: cb.dataset.initial, isTeam: false });
                     } else {
@@ -1334,8 +1365,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     box.querySelector('.task-name').textContent        = result.name;
                     box.querySelector('.task-description').textContent = result.description || '';
                     const pb = box.querySelector('.task-priority-badge');
-                    pb.textContent = PRIORITY_LABELS[result.priority] ?? 'NEW';
-                    pb.dataset.p   = result.priority;
+                    if (pb) {
+                        if (result.priority === 0) {
+                            pb.style.display = 'none';
+                        } else {
+                            pb.style.display = '';
+                            pb.textContent = PRIORITY_LABELS[result.priority] ?? '';
+                            pb.dataset.p   = result.priority;
+                        }
+                    }
                     box.dataset.priority = result.priority;
 
                     updateProgressUI(box, result.actions_completed, result.total_actions);
