@@ -398,17 +398,39 @@ def tasks(request):
 @login_required
 def add_task(request):
     if not request.user.profile.is_exec():
-        return redirect('tasks')
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid method'}, status=405)
 
+    data = json.loads(request.body)
     task = Task.objects.create(
-        name="New Task",
-        description="",
+        name=data.get('name', 'New Task') or 'New Task',
+        description=data.get('description', ''),
         team=request.user.profile.team,
-        total_actions=1,
+        total_actions=max(1, int(data.get('total_actions', 1))),
         actions_completed=0,
-        priority=0
+        priority=int(data.get('priority', 0)),
     )
-    return redirect(f'/tasks/?edit_task={task.id}')
+
+    deadline_raw = data.get('deadline', None)
+    if deadline_raw:
+        from django.utils.dateparse import parse_datetime
+        parsed = parse_datetime(deadline_raw)
+        if parsed:
+            if timezone.is_naive(parsed):
+                parsed = timezone.make_aware(parsed)
+            task.deadline = parsed
+
+    whole_team = data.get('whole_team', False)
+    task.whole_team = whole_team
+    if whole_team:
+        task.active_users.clear()
+    elif 'active_users' in data:
+        ids = [int(i) for i in data['active_users'] if i]
+        task.active_users.set(User.objects.filter(id__in=ids, profile__team=task.team))
+
+    task.save()
+    return JsonResponse({'ok': True})
 
 
 @login_required

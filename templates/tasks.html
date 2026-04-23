@@ -44,19 +44,20 @@ html[data-theme="light"] .tasks-page h2 {
     gap: 6px;
     background: var(--accent-2);
     color: #fff;
+    border: none;
+    box-shadow: none;
     font-family: 'Outfit', sans-serif;
     font-size: 0.85rem;
     font-weight: 700;
     padding: 8px 18px;
     border-radius: 10px;
     text-decoration: none;
-    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    transition: background 0.2s ease, transform 0.2s ease;
 }
 .add-task-btn:hover {
     background: #2563eb;
     color: #fff;
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(59,130,246,.3);
 }
 
 /* ── Tasks list ── */
@@ -390,22 +391,112 @@ html[data-theme="light"] .task-deadline-badge.overdue {
     color: #f87171;
 }
 
-/* ── Edit panel ── */
-.task-edit {
+/* ── Task modal ── */
+.task-modal-overlay {
     display: none;
-    padding: 18px;
-    background: var(--bg-elevated);
-    border-top: 1px solid var(--border-color);
-    border-radius: 0 0 14px 14px;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.72);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
 }
+.task-modal-overlay.open { display: flex; }
 
-.edit-grid {
+.task-modal {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    width: min(500px, 100%);
+    max-height: 85vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+.task-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 14px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+.task-modal-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.task-modal-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 4px 6px;
+    line-height: 1;
+    border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+}
+.task-modal-close:hover { color: var(--text-primary); background: var(--bg-elevated); }
+.task-modal-body {
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.task-modal-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
-    margin-bottom: 14px;
 }
-.edit-grid .full { grid-column: 1 / -1; }
+.task-modal-footer {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding: 14px 20px 18px;
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+/* ── Discard confirmation ── */
+.discard-confirm {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 600;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.discard-confirm.open { display: flex; }
+.discard-confirm-box {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 24px 28px;
+    width: min(340px, 100%);
+    text-align: center;
+}
+.discard-confirm-box p {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+.discard-confirm-box .discard-sub {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+}
+.discard-confirm-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
 
 .field-label {
     display: block;
@@ -446,74 +537,101 @@ html[data-theme="light"] .task-deadline-badge.overdue {
     filter: invert(0.6);
     cursor: pointer;
 }
-.edit-deadline {
-    width: 180px;
-}
-/* user assignment */
-.user-assign-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-.user-assign-row .edit-select { flex: 1; }
+/* ── Multi-select user picker ── */
+.multi-select-wrap { position: relative; }
 
-.btn-add-user {
-    background: var(--accent-2);
-    border: none;
-    color: #fff;
-    font-family: 'Outfit', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 700;
-    padding: 8px 30px;
-    border-radius: 9px;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background 0.2s;
-    flex-shrink: 0;
-}
-.btn-add-user:hover { background: #2563eb; }
-
-.assigned-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 8px;
-    min-height: 10px;
-}
-
-.assign-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    background: rgba(59,130,246,.12);
-    border: 1px solid rgba(59,130,246,.25);
+.multi-select-trigger {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
     color: var(--text-primary);
-    font-size: 0.75rem;
-    padding: 3px 8px 3px 7px;
-    border-radius: 99px;
-}
-.assign-chip.team-assign-chip {
-    background: rgba(139,92,246,.12);
-    border-color: rgba(139,92,246,.25);
-}
-.assign-chip button {
-    background: none;
-    border: none;
-    color: var(--text-muted);
+    font-family: 'General Sans', sans-serif;
+    font-size: 0.85rem;
+    border-radius: 9px;
+    padding: 8px 12px;
     cursor: pointer;
-    font-size: 0.78rem;
-    line-height: 1;
-    padding: 0;
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    text-align: left;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
-.assign-chip button:hover { color: #f87171; }
+.multi-select-trigger:focus,
+.multi-select-trigger.open {
+    border-color: var(--accent-2);
+    box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+    outline: none;
+}
+.multi-select-trigger .trigger-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-muted);
+}
+.multi-select-trigger .trigger-label.has-selection { color: var(--text-primary); }
 
-.edit-actions {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
+.multi-select-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.25);
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 600;
+    padding: 4px 0;
 }
+.multi-select-dropdown.open { display: block; }
+
+.multi-select-option {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    transition: background 0.15s;
+    user-select: none;
+}
+.multi-select-option:hover { background: var(--bg-elevated); }
+
+.multi-select-option input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1.5px solid var(--border-color);
+    background: var(--bg-elevated);
+    cursor: pointer;
+    flex-shrink: 0;
+    position: relative;
+    transition: background 0.15s, border-color 0.15s;
+}
+.multi-select-option input[type="checkbox"]:checked {
+    background: var(--accent-2);
+    border-color: var(--accent-2);
+}
+.multi-select-option input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: 1px;
+    width: 5px;
+    height: 8px;
+    border: 2px solid #fff;
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg);
+}
+
 
 .btn-save {
     background: var(--accent-2);
@@ -528,6 +646,12 @@ html[data-theme="light"] .task-deadline-badge.overdue {
     transition: background 0.2s, transform 0.2s;
 }
 .btn-save:hover { background: #2563eb; transform: translateY(-1px); }
+.btn-save:disabled {
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    cursor: not-allowed;
+    transform: none;
+}
 
 .btn-cancel {
     background: transparent;
@@ -578,6 +702,24 @@ html[data-theme="light"] .task-deadline-badge.overdue {
     border-radius: 14px;
 }
 .empty-state .empty-icon { display: block; font-size: 1.8rem; margin-bottom: 10px; }
+
+.delete-confirm-popup {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 700;
+    background: var(--bg-card-solid, var(--bg-card));
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    white-space: nowrap;
+    min-width: 180px;
+}
+.delete-confirm-popup.open { display: block; }
+.delete-confirm-popup p { margin: 0 0 10px; font-size: 0.82rem; color: var(--text-primary); }
+.delete-confirm-actions { display: flex; gap: 6px; justify-content: flex-end; }
 </style>
 {% endblock %}
 
@@ -589,9 +731,9 @@ html[data-theme="light"] .task-deadline-badge.overdue {
     <div class="d-flex align-items-center justify-content-between mb-4">
         <h2>Tasks</h2>
         {% if is_exec %}
-        <a href="{% url 'add_task' %}" class="add-task-btn">
+        <button class="add-task-btn" id="addTaskBtn">
             <i class="bi bi-plus-lg"></i> Add Task
-        </a>
+        </button>
         {% endif %}
     </div>
 
@@ -606,7 +748,13 @@ html[data-theme="light"] .task-deadline-badge.overdue {
         <div class="task-box {% if task.deadline and task.deadline < now %}is-overdue{% endif %}"
              data-task="{{ task.id }}"
              data-priority="{{ task.priority|default:0 }}"
-             data-edit-url="{% url 'edit_task' task.id %}">
+             data-edit-url="{% url 'edit_task' task.id %}"
+             data-name="{{ task.name|escape }}"
+             data-description="{{ task.description|default:''|escape }}"
+             data-total-actions="{{ task.total_actions }}"
+             data-deadline="{{ task.deadline|date:'Y-m-d\TH:i'|default:'' }}"
+             data-active-users="{% for u in task.active_users.all %}{{ u.id }}{% if not forloop.last %},{% endif %}{% endfor %}"
+             data-whole-team="{{ task.whole_team|yesno:'true,false' }}">
 
             <div class="task-view">
                 <div class="task-header">
@@ -634,7 +782,16 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                         {% if is_exec %}
                         <div class="exec-controls">
                             <button class="icon-btn edit-btn" title="Edit"><i class="bi bi-pencil"></i></button>
-                            <a href="{% url 'remove_task' task.id %}" class="icon-btn danger" title="Delete"><i class="bi bi-trash"></i></a>
+                            <div style="position:relative;display:inline-block;">
+                                <button class="icon-btn danger delete-btn" title="Delete"><i class="bi bi-trash"></i></button>
+                                <div class="delete-confirm-popup">
+                                    <p>Delete this task?</p>
+                                    <div class="delete-confirm-actions">
+                                        <button class="btn-cancel delete-cancel" style="padding:5px 10px;font-size:0.78rem;">Cancel</button>
+                                        <a class="btn-save delete-confirm-go" href="{% url 'remove_task' task.id %}" style="padding:5px 10px;font-size:0.78rem;text-decoration:none;">Delete</a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         {% endif %}
                     </div>
@@ -681,69 +838,6 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                 </div>
             </div>
 
-            {% if is_exec %}
-            <div class="task-edit"
-                 data-active-users="{% for u in task.active_users.all %}{{ u.id }}{% if not forloop.last %},{% endif %}{% endfor %}"
-                 data-whole-team="{{ task.whole_team|yesno:'true,false' }}">
-                <div class="edit-grid">
-                    <div class="full">
-                        <label class="field-label">Task name</label>
-                        <input class="edit-input edit-name" type="text" value="{{ task.name }}">
-                    </div>
-                    <div class="full">
-                        <label class="field-label">Description</label>
-                        <textarea class="edit-textarea edit-description">{{ task.description }}</textarea>
-                    </div>
-                    <div>
-                        <label class="field-label">Quota (If  not applicable, leave as 1)</label>
-                        <input class="edit-input edit-total-actions" type="number" value="{{ task.total_actions }}" min="1">
-                    </div>
-                    <div>
-                        <label class="field-label">Priority</label>
-                        <select class="edit-select edit-priority">
-                            <option value="0" {% if task.priority == 0 %}selected{% endif %}>🔵 Undetermined</option>
-                            <option value="1" {% if task.priority == 1 %}selected{% endif %}>🟢 Low Priority</option>
-                            <option value="2" {% if task.priority == 2 %}selected{% endif %}>🟡 Medium Priority</option>
-                            <option value="3" {% if task.priority == 3 %}selected{% endif %}>🟠 High Priority</option>
-                            <option value="4" {% if task.priority == 4 %}selected{% endif %}>🔴 URGENT</option>
-                        </select>
-                    </div>
-                    <div class="full">
-                        <label class="field-label">Deadline (optional)</label>
-                        <input class="edit-input edit-deadline" type="datetime-local"
-                               value="{{ task.deadline|date:'Y-m-d\TH:i'|default:'' }}">
-                    </div>
-                    <div class="full">
-                        <label class="field-label">Assign users</label>
-                        <div class="user-assign-row">
-                            <select class="edit-select user-dropdown">
-                                <option value="">— select —</option>
-                                <option value="__team__"
-                                        data-name="{{ team_name }} (Everyone)"
-                                        data-initial="ALL"
-                                        data-is-team="true">
-                                    👥 {{ team_name }} (Everyone In Team)
-                                </option>
-                                {% for member in team_members %}
-                                <option value="{{ member.id }}"
-                                        data-name="{{ member.get_full_name|default:member.username }}"
-                                        data-initial="{{ member.first_name|make_list|first|default:member.username|make_list|first|upper }}">
-                                    {{ member.get_full_name|default:member.username }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                            <button type="button" class="btn-add-user">+ Add</button>
-                        </div>
-                        <div class="assigned-chips"></div>
-                    </div>
-                </div>
-                <div class="edit-actions">
-                    <button class="btn-cancel cancel-btn">Cancel</button>
-                    <button class="btn-save save-btn">Save changes</button>
-                </div>
-            </div>
-            {% endif %}
-
         </div>
         {% endwith %}
         {% empty %}
@@ -766,7 +860,13 @@ html[data-theme="light"] .task-deadline-badge.overdue {
             <div class="task-box is-completed"
                  data-task="{{ task.id }}"
                  data-priority="{{ task.priority|default:0 }}"
-                 data-edit-url="{% url 'edit_task' task.id %}">
+                 data-edit-url="{% url 'edit_task' task.id %}"
+                 data-name="{{ task.name|escape }}"
+                 data-description="{{ task.description|default:''|escape }}"
+                 data-total-actions="{{ task.total_actions }}"
+                 data-deadline="{{ task.deadline|date:'Y-m-d\TH:i'|default:'' }}"
+                 data-active-users="{% for u in task.active_users.all %}{{ u.id }}{% if not forloop.last %},{% endif %}{% endfor %}"
+                 data-whole-team="{{ task.whole_team|yesno:'true,false' }}">
 
                 <div class="task-view">
                     <div class="task-header">
@@ -792,7 +892,16 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                             {% if is_exec %}
                             <div class="exec-controls">
                                 <button class="icon-btn edit-btn" title="Edit"><i class="bi bi-pencil"></i></button>
-                                <a href="{% url 'remove_task' task.id %}" class="icon-btn danger" title="Delete"><i class="bi bi-trash"></i></a>
+                                <div style="position:relative;display:inline-block;">
+                                    <button class="icon-btn danger delete-btn" title="Delete"><i class="bi bi-trash"></i></button>
+                                    <div class="delete-confirm-popup">
+                                        <p>Delete this task?</p>
+                                        <div class="delete-confirm-actions">
+                                            <button class="btn-cancel delete-cancel" style="padding:5px 10px;font-size:0.78rem;">Cancel</button>
+                                            <a class="btn-save delete-confirm-go" href="{% url 'remove_task' task.id %}" style="padding:5px 10px;font-size:0.78rem;text-decoration:none;">Delete</a>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             {% endif %}
                         </div>
@@ -837,69 +946,6 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                     </div>
                 </div>
 
-                {% if is_exec %}
-                <div class="task-edit"
-                     data-active-users="{% for u in task.active_users.all %}{{ u.id }}{% if not forloop.last %},{% endif %}{% endfor %}"
-                     data-whole-team="{{ task.whole_team|yesno:'true,false' }}">
-                    <div class="edit-grid">
-                        <div class="full">
-                            <label class="field-label">Task name</label>
-                            <input class="edit-input edit-name" type="text" value="{{ task.name }}">
-                        </div>
-                        <div class="full">
-                            <label class="field-label">Description</label>
-                            <textarea class="edit-textarea edit-description">{{ task.description }}</textarea>
-                        </div>
-                        <div>
-                            <label class="field-label">Total actions</label>
-                            <input class="edit-input edit-total-actions" type="number" value="{{ task.total_actions }}" min="1">
-                        </div>
-                        <div>
-                            <label class="field-label">Priority</label>
-                            <select class="edit-select edit-priority">
-                                <option value="0" {% if task.priority == 0 %}selected{% endif %}>🔵 Undetermined</option>
-                                <option value="1" {% if task.priority == 1 %}selected{% endif %}>🟢 Low Priority</option>
-                                <option value="2" {% if task.priority == 2 %}selected{% endif %}>🟡 Medium Priority</option>
-                                <option value="3" {% if task.priority == 3 %}selected{% endif %}>🟠 High Priority</option>
-                                <option value="4" {% if task.priority == 4 %}selected{% endif %}>🔴 URGENT</option>
-                            </select>
-                        </div>
-                        <div class="full">
-                            <label class="field-label">Deadline (optional)</label>
-                            <input class="edit-input edit-deadline" type="datetime-local"
-                                   value="{{ task.deadline|date:'Y-m-d\TH:i'|default:'' }}">
-                        </div>
-                        <div class="full">
-                            <label class="field-label">Assign users</label>
-                            <div class="user-assign-row">
-                                <select class="edit-select user-dropdown">
-                                    <option value="">— select —</option>
-                                    <option value="__team__"
-                                            data-name="{{ team_name }} (Everyone)"
-                                            data-initial="ALL"
-                                            data-is-team="true">
-                                        👥 {{ team_name }} (Everyone)
-                                    </option>
-                                    {% for member in team_members %}
-                                    <option value="{{ member.id }}"
-                                            data-name="{{ member.get_full_name|default:member.username }}"
-                                            data-initial="{{ member.first_name|make_list|first|default:member.username|make_list|first|upper }}">
-                                        {{ member.get_full_name|default:member.username }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                                <button type="button" class="btn-add-user">+ Add</button>
-                            </div>
-                            <div class="assigned-chips"></div>
-                        </div>
-                    </div>
-                    <div class="edit-actions">
-                        <button class="btn-cancel cancel-btn">Cancel</button>
-                        <button class="btn-save save-btn">Save changes</button>
-                    </div>
-                </div>
-                {% endif %}
-
             </div>
             {% endfor %}
         </div>
@@ -907,6 +953,92 @@ html[data-theme="light"] .task-deadline-badge.overdue {
     {% endif %}
 
 </div>
+
+{% if is_exec %}
+<div id="taskModalOverlay" class="task-modal-overlay">
+    <div class="task-modal">
+        <div class="task-modal-header">
+            <span class="task-modal-title" id="taskModalTitle">New Task</span>
+            <button class="task-modal-close" id="taskModalClose">✕</button>
+        </div>
+        <div class="task-modal-body">
+            <div>
+                <label class="field-label">Task name</label>
+                <input class="edit-input" id="modalName" type="text" placeholder="What needs to get done?">
+            </div>
+            <div>
+                <label class="field-label">Assign members</label>
+                <div class="multi-select-wrap">
+                    <button type="button" class="multi-select-trigger" id="modalTrigger">
+                        <span class="trigger-label">Select members...</span>
+                        <i class="bi bi-chevron-down" style="font-size:0.7rem;flex-shrink:0;"></i>
+                    </button>
+                    <div class="multi-select-dropdown" id="modalDropdown">
+                        <label class="multi-select-option">
+                            <input type="checkbox" class="member-cb"
+                                   value="__team__"
+                                   data-name="{{ team_name }} (Everyone)"
+                                   data-initial="ALL"
+                                   data-is-team="true">
+                            <span>👥 {{ team_name }} (Everyone)</span>
+                        </label>
+                        {% for member in team_members %}
+                        <label class="multi-select-option">
+                            <input type="checkbox" class="member-cb"
+                                   value="{{ member.id }}"
+                                   data-name="{{ member.get_full_name|default:member.username }}"
+                                   data-initial="{{ member.first_name|make_list|first|default:member.username|make_list|first|upper }}"
+                                   data-is-team="false">
+                            <span>{{ member.get_full_name|default:member.username }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div>
+                <label class="field-label">Additional comments</label>
+                <textarea class="edit-textarea" id="modalComments"
+                          placeholder="Extra context, notes, or details..."></textarea>
+            </div>
+            <div class="task-modal-grid">
+                <div>
+                    <label class="field-label">Priority</label>
+                    <select class="edit-select" id="modalPriority">
+                        <option value="0">🔵 Undetermined</option>
+                        <option value="1">🟢 Low</option>
+                        <option value="2">🟡 Medium</option>
+                        <option value="3">🟠 High</option>
+                        <option value="4">🔴 URGENT</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="field-label">Quota (leave 1 if N/A)</label>
+                    <input class="edit-input" id="modalQuota" type="number" min="1" value="1">
+                </div>
+            </div>
+            <div>
+                <label class="field-label">Deadline</label>
+                <input class="edit-input" id="modalDeadline" type="datetime-local">
+            </div>
+        </div>
+        <div class="task-modal-footer">
+            <button class="btn-cancel" id="taskModalCancel">Cancel</button>
+            <button class="btn-save" id="taskModalSave">Create Task</button>
+        </div>
+    </div>
+</div>
+
+<div id="discardConfirm" class="discard-confirm">
+    <div class="discard-confirm-box">
+        <p>This task won't be created.</p>
+        <span class="discard-sub">You'll lose any details you've entered.</span>
+        <div class="discard-confirm-actions">
+            <button class="btn-cancel" id="discardGoBack">Go back</button>
+            <button class="btn-save" id="discardConfirmBtn" style="background:#ef4444;">Discard</button>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
@@ -916,27 +1048,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return el ? el.value : '';
     };
 
-    // Priority label map
     const PRIORITY_LABELS = { 0: 'PENDING SETUP', 1: 'LOW', 2: 'MED', 3: 'HIGH', 4: 'URGENT' };
-
-    // ── Auto-open edit panel for newly created task ──
-    const params = new URLSearchParams(window.location.search);
-    const editTaskId = params.get('edit_task');
-    if (editTaskId) {
-        const newBox = document.querySelector(`.task-box[data-task="${editTaskId}"]`);
-        if (newBox) {
-            const editDiv = newBox.querySelector('.task-edit');
-            const editBtn = newBox.querySelector('.edit-btn');
-            if (editDiv) {
-                editDiv.style.display = 'block';
-                if (editBtn) editBtn.style.display = 'none';
-                newBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                const nameInput = editDiv.querySelector('.edit-name');
-                if (nameInput) { nameInput.focus(); nameInput.select(); }
-            }
-        }
-        history.replaceState(null, '', window.location.pathname);
-    }
 
     // ── Completed section toggle ──
     const toggle = document.getElementById('completedToggle');
@@ -948,21 +1060,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ── Format a deadline ISO string for display ──
     const formatDeadline = (iso) => {
         if (!iso) return '';
         const dt = new Date(iso);
         return dt.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
     };
 
-    // ── Update progress display ──
     const updateProgressUI = (box, completed, total) => {
         const checkbox = box.querySelector('.single-checkbox');
-        if (checkbox) {
-            // Single-action mode
-            checkbox.checked = completed >= 1;
-            return;
-        }
+        if (checkbox) { checkbox.checked = completed >= 1; return; }
         const pt = box.querySelector('.progress-text');
         if (!pt) return;
         pt.textContent = `${completed}/${total}`;
@@ -973,7 +1079,6 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (completed > 0) pt.classList.add('partial');
     };
 
-    // ── Update user chips in read view after save ──
     const updateUserChips = (box, users, wholeTeam) => {
         const container = box.querySelector('.active-users');
         container.innerHTML = '';
@@ -1004,17 +1109,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // ── Update deadline badge in read view after save ──
     const updateDeadlineBadge = (box, deadlineISO, isCompleted) => {
         const headerRight = box.querySelector('.task-header-right');
         let badge = box.querySelector('.task-deadline-badge');
         const priorityBadge = box.querySelector('.task-priority-badge');
-
         if (deadlineISO) {
             const now = new Date();
             const dl = new Date(deadlineISO);
             const overdue = !isCompleted && dl < now;
-
             if (!badge) {
                 badge = document.createElement('span');
                 badge.className = 'task-deadline-badge';
@@ -1028,99 +1130,200 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // ── Render assigned chips in edit panel ──
-    function renderAssignedChips(editDiv, users) {
-        const container = editDiv.querySelector('.assigned-chips');
-        container.innerHTML = '';
-        users.forEach(u => {
-            const chip = document.createElement('span');
-            chip.className = 'assign-chip' + (u.isTeam ? ' team-assign-chip' : '');
-            chip.innerHTML = `<span>${u.initial}</span><span>${u.name}</span><button type="button" title="Remove">✕</button>`;
-            chip.querySelector('button').addEventListener('click', () => {
-                const idx = users.findIndex(x => x.id === u.id);
-                if (idx !== -1) users.splice(idx, 1);
-                renderAssignedChips(editDiv, users);
+    // ── Modal ──
+    const overlay      = document.getElementById('taskModalOverlay');
+    const modalTitle   = document.getElementById('taskModalTitle');
+    const modalName    = document.getElementById('modalName');
+    const modalComments = document.getElementById('modalComments');
+    const modalPriority = document.getElementById('modalPriority');
+    const modalQuota   = document.getElementById('modalQuota');
+    const modalDeadline = document.getElementById('modalDeadline');
+    const modalTrigger = document.getElementById('modalTrigger');
+    const modalDropdown = document.getElementById('modalDropdown');
+    const modalSaveBtn = document.getElementById('taskModalSave');
+    const discardConfirm = document.getElementById('discardConfirm');
+
+    let modalMode        = 'create';
+    let modalCurrentBox  = null;
+    let modalAssignedUsers = [];
+
+    const modalCheckboxes = modalDropdown ? [...modalDropdown.querySelectorAll('.member-cb')] : [];
+
+    const updateTriggerLabel = (users) => {
+        if (!modalTrigger) return;
+        const label = modalTrigger.querySelector('.trigger-label');
+        if (users.length === 0) {
+            label.textContent = 'Select members...';
+            label.classList.remove('has-selection');
+        } else if (users.some(u => u.isTeam)) {
+            label.textContent = 'Whole team';
+            label.classList.add('has-selection');
+        } else if (users.length === 1) {
+            label.textContent = users[0].name;
+            label.classList.add('has-selection');
+        } else {
+            label.textContent = `${users.length} members selected`;
+            label.classList.add('has-selection');
+        }
+    };
+
+    const hasModalInput = () =>
+        modalName.value.trim() !== '' ||
+        modalComments.value.trim() !== '' ||
+        modalDeadline.value !== '' ||
+        modalPriority.value !== '0' ||
+        modalQuota.value !== '1' ||
+        modalAssignedUsers.length > 0;
+
+    const closeModal = (force = false) => {
+        if (modalMode === 'create' && !force && hasModalInput()) {
+            discardConfirm.classList.add('open');
+            return;
+        }
+        overlay.classList.remove('open');
+        if (modalDropdown) modalDropdown.classList.remove('open');
+        if (modalTrigger)  modalTrigger.classList.remove('open');
+        document.body.style.overflow = '';
+        modalCurrentBox = null;
+    };
+
+    const openModal = (box) => {
+        modalMode       = 'edit';
+        modalCurrentBox = box;
+        modalTitle.textContent   = 'Edit Task';
+        modalSaveBtn.textContent = 'Save changes';
+        modalSaveBtn.disabled    = false;
+
+        modalName.value     = box.dataset.name     || '';
+        modalComments.value = box.dataset.description || '';
+        modalPriority.value = box.dataset.priority  || '0';
+        modalQuota.value    = box.dataset.totalActions || '1';
+        modalDeadline.value = box.dataset.deadline  || '';
+
+        const rawIds = (box.dataset.activeUsers || '').split(',').filter(Boolean);
+        const isTeam = box.dataset.wholeTeam === 'true';
+        modalAssignedUsers = [];
+        modalCheckboxes.forEach(cb => { cb.checked = false; });
+
+        if (isTeam) {
+            const teamCb = modalDropdown.querySelector('.member-cb[data-is-team="true"]');
+            if (teamCb) { teamCb.checked = true; modalAssignedUsers = [{ id: '__team__', name: teamCb.dataset.name, initial: 'ALL', isTeam: true }]; }
+        } else {
+            rawIds.forEach(id => {
+                const cb = modalDropdown.querySelector(`.member-cb[value="${id}"]`);
+                if (cb) { cb.checked = true; modalAssignedUsers.push({ id, name: cb.dataset.name, initial: cb.dataset.initial, isTeam: false }); }
             });
-            container.appendChild(chip);
+        }
+        updateTriggerLabel(modalAssignedUsers);
+        overlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        modalName.focus();
+    };
+
+    const openCreateModal = () => {
+        modalMode       = 'create';
+        modalCurrentBox = null;
+        modalTitle.textContent   = 'New Task';
+        modalSaveBtn.textContent = 'Create Task';
+        modalSaveBtn.disabled    = true;
+
+        modalName.value     = '';
+        modalComments.value = '';
+        modalPriority.value = '0';
+        modalQuota.value    = '1';
+        modalDeadline.value = '';
+        modalAssignedUsers  = [];
+        modalCheckboxes.forEach(cb => { cb.checked = false; });
+        updateTriggerLabel([]);
+        overlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        modalName.focus();
+    };
+
+    if (overlay) {
+        document.getElementById('taskModalClose').addEventListener('click', () => closeModal());
+        document.getElementById('taskModalCancel').addEventListener('click', () => closeModal());
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+
+        modalName.addEventListener('input', () => {
+            modalSaveBtn.disabled = modalName.value.trim() === '';
         });
-    }
 
-    // ── Wire up every task card ──
-    document.querySelectorAll('.task-box').forEach(box => {
-        const editUrl = box.dataset.editUrl;
-        const editDiv = box.querySelector('.task-edit');
-        const editBtn   = box.querySelector('.edit-btn');
-        const cancelBtn = box.querySelector('.cancel-btn');
-        const saveBtn   = box.querySelector('.save-btn');
+        document.getElementById('discardGoBack').addEventListener('click', () => {
+            discardConfirm.classList.remove('open');
+        });
+        document.getElementById('discardConfirmBtn').addEventListener('click', () => {
+            discardConfirm.classList.remove('open');
+            closeModal(true);
+        });
 
-        let assignedUsers = [];
+        // Dropdown toggle
+        modalTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            modalDropdown.classList.toggle('open');
+            modalTrigger.classList.toggle('open');
+        });
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#modalTrigger') && !e.target.closest('#modalDropdown')) {
+                modalDropdown.classList.remove('open');
+                modalTrigger.classList.remove('open');
+            }
+        });
 
-        if (editDiv) {
-            const rawIds   = (editDiv.dataset.activeUsers || '').split(',').filter(Boolean);
-            const isTeam   = editDiv.dataset.wholeTeam === 'true';
-            const dropdown = editDiv.querySelector('.user-dropdown');
+        // Checkbox handlers
+        modalCheckboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                const isTeamOpt = cb.dataset.isTeam === 'true';
+                if (isTeamOpt) {
+                    if (cb.checked) {
+                        modalCheckboxes.forEach(c => { if (c !== cb) c.checked = false; });
+                        modalAssignedUsers = [{ id: '__team__', name: cb.dataset.name, initial: 'ALL', isTeam: true }];
+                    } else {
+                        modalAssignedUsers = [];
+                    }
+                } else {
+                    const teamCb = modalDropdown.querySelector('.member-cb[data-is-team="true"]');
+                    if (teamCb) teamCb.checked = false;
+                    modalAssignedUsers = modalAssignedUsers.filter(u => !u.isTeam);
+                    if (cb.checked) {
+                        modalAssignedUsers.push({ id: cb.value, name: cb.dataset.name, initial: cb.dataset.initial, isTeam: false });
+                    } else {
+                        modalAssignedUsers = modalAssignedUsers.filter(u => u.id !== cb.value);
+                    }
+                }
+                updateTriggerLabel(modalAssignedUsers);
+            });
+        });
 
-            if (isTeam) {
-                const teamOpt = dropdown ? [...dropdown.options].find(o => o.value === '__team__') : null;
-                if (teamOpt) {
-                    assignedUsers.push({ id: '__team__', name: teamOpt.dataset.name, initial: 'ALL', isTeam: true });
+        // Save / Create
+        modalSaveBtn.addEventListener('click', async () => {
+            const wholeTeam = modalAssignedUsers.some(u => u.isTeam);
+            const payload = {
+                name:          modalName.value,
+                description:   modalComments.value,
+                total_actions: modalQuota.value,
+                priority:      modalPriority.value,
+                deadline:      modalDeadline.value,
+                whole_team:    wholeTeam,
+                active_users:  wholeTeam ? [] : modalAssignedUsers.map(u => u.id),
+            };
+            if (modalMode === 'create') {
+                try {
+                    const res = await fetch('/tasks/add/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
+                        body: JSON.stringify(payload),
+                    });
+                    const result = await res.json();
+                    if (result.error) { console.error('Create error:', result.error); return; }
+                    window.location = '/tasks/';
+                } catch (err) {
+                    console.error('Create failed:', err);
                 }
             } else {
-                rawIds.forEach(id => {
-                    const opt = dropdown ? [...dropdown.options].find(o => o.value === id) : null;
-                    if (opt) assignedUsers.push({ id, name: opt.dataset.name, initial: opt.dataset.initial, isTeam: false });
-                });
-            }
-            renderAssignedChips(editDiv, assignedUsers);
-
-            // + Add button
-            editDiv.querySelector('.btn-add-user').addEventListener('click', () => {
-                const sel = editDiv.querySelector('.user-dropdown');
-                const opt = sel.options[sel.selectedIndex];
-                if (!opt.value) return;
-
-                const isTeamOpt = opt.dataset.isTeam === 'true';
-                if (isTeamOpt) {
-                    assignedUsers = [{ id: '__team__', name: opt.dataset.name, initial: 'ALL', isTeam: true }];
-                } else {
-                    assignedUsers = assignedUsers.filter(u => !u.isTeam);
-                    if (assignedUsers.find(u => u.id === opt.value)) return;
-                    assignedUsers.push({ id: opt.value, name: opt.dataset.name, initial: opt.dataset.initial, isTeam: false });
-                }
-                renderAssignedChips(editDiv, assignedUsers);
-                sel.value = '';
-            });
-        }
-
-        // Edit / Cancel
-        if (editBtn) {
-            editBtn.addEventListener('click', () => {
-                editDiv.style.display = 'block';
-                editBtn.style.display = 'none';
-            });
-        }
-        if (cancelBtn) {
-            cancelBtn.addEventListener('click', () => {
-                editDiv.style.display = 'none';
-                editBtn.style.display = '';
-            });
-        }
-
-        // Save
-        if (saveBtn) {
-            saveBtn.addEventListener('click', async () => {
-                const wholeTeam = assignedUsers.some(u => u.isTeam);
-                const payload = {
-                    name:          editDiv.querySelector('.edit-name').value,
-                    description:   editDiv.querySelector('.edit-description').value,
-                    total_actions: editDiv.querySelector('.edit-total-actions').value,
-                    priority:      editDiv.querySelector('.edit-priority').value,
-                    deadline:      editDiv.querySelector('.edit-deadline').value,  // '' if cleared
-                    whole_team:    wholeTeam,
-                    active_users:  wholeTeam ? [] : assignedUsers.map(u => u.id),
-                };
+                const box = modalCurrentBox;
                 try {
-                    const res = await fetch(editUrl, {
+                    const res = await fetch(box.dataset.editUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
                         body: JSON.stringify(payload),
@@ -1128,10 +1331,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const result = await res.json();
                     if (result.error) { console.error('Save error:', result.error); return; }
 
-                    // Update card read view
                     box.querySelector('.task-name').textContent        = result.name;
-                    box.querySelector('.task-description').textContent = result.description;
-
+                    box.querySelector('.task-description').textContent = result.description || '';
                     const pb = box.querySelector('.task-priority-badge');
                     pb.textContent = PRIORITY_LABELS[result.priority] ?? 'NEW';
                     pb.dataset.p   = result.priority;
@@ -1142,29 +1343,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const isCompleted = result.actions_completed >= result.total_actions;
                     updateDeadlineBadge(box, result.deadline, isCompleted);
-
-                    // Overdue class
                     const now = new Date();
                     const dl  = result.deadline ? new Date(result.deadline) : null;
                     box.classList.toggle('is-overdue', !!(dl && !isCompleted && dl < now));
 
-                    editDiv.style.display = 'none';
-                    editBtn.style.display = '';
+                    // Update data attrs for next open
+                    box.dataset.name        = result.name;
+                    box.dataset.description = result.description || '';
+                    box.dataset.priority    = result.priority;
+                    box.dataset.totalActions = result.total_actions;
+                    box.dataset.deadline    = result.deadline || '';
+                    box.dataset.wholeTeam   = result.whole_team ? 'true' : 'false';
+                    box.dataset.activeUsers = result.whole_team ? '' : result.active_users.map(u => u.id).join(',');
+
+                    closeModal(true);
                 } catch (err) {
                     console.error('Save failed:', err);
                 }
-            });
+            }
+        });
+
+        document.getElementById('addTaskBtn').addEventListener('click', openCreateModal);
+    }
+
+    // ── Wire up every task card ──
+    document.querySelectorAll('.task-box').forEach(box => {
+        const editUrl = box.dataset.editUrl;
+        const editBtn = box.querySelector('.edit-btn');
+
+        if (editBtn) {
+            editBtn.addEventListener('click', () => openModal(box));
         }
 
         // ── Single-action checkbox ──
         const checkbox = box.querySelector('.single-checkbox');
-        if (checkbox) {
-            checkbox.addEventListener('change', () => {
-                sendProgress(checkbox.checked ? 1 : 0);
-            });
-        }
-
-        // ── Multi-action progress arrows ──
         const sendProgress = async (newVal) => {
             try {
                 const res = await fetch(editUrl, {
@@ -1174,30 +1386,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const result = await res.json();
                 if (result.error) return;
-
                 updateProgressUI(box, result.actions_completed, result.total_actions);
-
-                // Toggle completed style
                 const done = result.actions_completed >= result.total_actions;
                 box.classList.toggle('is-completed', done);
                 box.querySelector('.task-name').style.textDecoration = done ? 'line-through' : '';
-
-                // Re-evaluate overdue (completing a task removes overdue)
                 const deadlineBadge = box.querySelector('.task-deadline-badge');
                 const dl = deadlineBadge ? new Date(deadlineBadge.dataset.deadline) : null;
                 const now = new Date();
                 box.classList.toggle('is-overdue', !!(dl && !done && dl < now));
-                if (deadlineBadge) {
-                    deadlineBadge.classList.toggle('overdue', !!(dl && !done && dl < now));
-                }
+                if (deadlineBadge) deadlineBadge.classList.toggle('overdue', !!(dl && !done && dl < now));
             } catch (err) {
                 console.error('Progress update failed:', err);
             }
         };
 
+        if (checkbox) {
+            checkbox.addEventListener('change', () => sendProgress(checkbox.checked ? 1 : 0));
+        }
+
         const decBtn = box.querySelector('.dec-btn');
         const incBtn = box.querySelector('.inc-btn');
-
         if (decBtn) {
             decBtn.addEventListener('click', () => {
                 const pt = box.querySelector('.progress-text');
@@ -1213,6 +1421,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (cur < total) sendProgress(cur + 1);
             });
         }
+    });
+
+    // ── Delete confirmation popups ──
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        const popup = btn.nextElementSibling;
+
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.delete-confirm-popup.open').forEach(p => {
+                if (p !== popup) p.classList.remove('open');
+            });
+            popup.classList.toggle('open');
+        });
+
+        popup.querySelector('.delete-cancel').addEventListener('click', (e) => {
+            e.stopPropagation();
+            popup.classList.remove('open');
+        });
+    });
+
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.delete-confirm-popup.open')
+            .forEach(p => p.classList.remove('open'));
     });
 });
 </script>
