@@ -376,7 +376,7 @@ def tasks(request):
         .order_by('-priority', 'name')
     )
 
-    team_members = User.objects.filter(profile__team=team).exclude(profile__role='admin')
+    team_members = User.objects.filter(profile__team=team).exclude(profile__role='admin').exclude(is_superuser=True)
     now = timezone.now()
 
     return render(request, 'tasks.html', {

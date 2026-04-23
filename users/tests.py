@@ -44,3 +44,12 @@ class TasksDropdownTeamIsolationTest(TestCase):
         team_members = list(response.context['team_members'])
 
         self.assertNotIn(self.admin_user, team_members)
+
+    def test_dropdown_excludes_superusers(self):
+        superuser = User.objects.create_superuser('super_a', password='pw')
+        UserProfile.objects.filter(user=superuser).update(team=self.team_a, role='member')
+
+        response = self.client.get('/tasks/')
+        team_members = list(response.context['team_members'])
+
+        self.assertNotIn(superuser, team_members)

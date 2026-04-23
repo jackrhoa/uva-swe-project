@@ -1019,7 +1019,10 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                                    data-name="{{ member.get_full_name|default:member.username }}"
                                    data-initial="{{ member.first_name|make_list|first|default:member.username|make_list|first|upper }}"
                                    data-is-team="false">
-                            <span>{{ member.get_full_name|default:member.username }}</span>
+                            <span>
+                                {{ member.get_full_name|default:member.username }}{% if member == request.user %}<span style="font-size:0.72rem;font-weight:500;color:var(--text-muted);"> (you)</span>{% endif %}
+                                <small style="display:block;font-size:0.72rem;color:var(--text-muted);line-height:1.2;">{{ member.email }}</small>
+                            </span>
                         </label>
                         {% endfor %}
                     </div>
