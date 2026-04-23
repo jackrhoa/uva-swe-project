@@ -354,7 +354,7 @@ def tasks(request):
     if request.user.profile.is_admin():
         return redirect('admin_dashboard')
     team = request.user.profile.team
-    from django.db.models import Q, Case, When, Value, IntegerField
+    from django.db.models import Q
 
     all_tasks = Task.objects.filter(team=team)
 
@@ -365,16 +365,10 @@ def tasks(request):
             Q(whole_team=True) | Q(active_users=request.user)
         ).distinct()
 
-    priority_order = Case(
-        When(priority=0, then=Value(0)),
-        default=Value(1),
-        output_field=IntegerField()
-    )
-
     uncompleted_tasks = (
         visible
         .filter(actions_completed__lt=models.F('total_actions'))
-        .order_by(priority_order, '-priority', 'name')
+        .order_by('-priority', 'name')
     )
     completed_tasks = (
         visible
@@ -409,7 +403,7 @@ def add_task(request):
         team=request.user.profile.team,
         total_actions=max(1, int(data.get('total_actions', 1))),
         actions_completed=0,
-        priority=int(data.get('priority', 0)),
+        priority=int(data.get('priority', 1)),
     )
 
     deadline_raw = data.get('deadline', None)

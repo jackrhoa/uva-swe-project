@@ -45,7 +45,6 @@ class UserProfile(models.Model):
     
 class Task(models.Model):
     PRIORITY_CHOICES = [
-        (0, 'Undetermined'),
         (1, 'Low'),
         (2, 'Medium'),
         (3, 'High'),
@@ -60,8 +59,7 @@ class Task(models.Model):
     actions_completed = models.PositiveIntegerField(default=0)
     total_actions = models.PositiveIntegerField(default=1)
  
-    # Priority: 0=Undetermined, 1=Low, 2=Medium, 3=High, 4=Urgent
-    priority = models.PositiveSmallIntegerField(default=0, choices=PRIORITY_CHOICES)
+    priority = models.PositiveSmallIntegerField(default=1, choices=PRIORITY_CHOICES)
  
     # Deadline (optional)
     deadline = models.DateTimeField(null=True, blank=True)

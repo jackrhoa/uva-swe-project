@@ -85,7 +85,6 @@ html[data-theme="light"] .tasks-page h2 {
 }
 
 /* Priority top-border colors */
-.task-box[data-priority="0"] { border-top-color: rgba(96,165,250,.4); }
 .task-box[data-priority="1"] { border-top-color: rgba(34,197,94,.4); }
 .task-box[data-priority="2"] { border-top-color: rgba(234,179,8,.5); }
 .task-box[data-priority="3"] { border-top-color: rgba(249,115,22,.7); }
@@ -152,12 +151,6 @@ html[data-theme="light"] .tasks-page h2 {
     border: 1.5px solid;
     white-space: nowrap;
 }
-/* Undetermined — blue */
-.task-priority-badge[data-p="0"] {
-    background: rgba(96,165,250,.15);
-    border-color: rgba(96,165,250,.5);
-    color: #60a5fa;
-}
 /* Low — green */
 .task-priority-badge[data-p="1"] {
     background: rgba(34,197,94,.15);
@@ -184,7 +177,6 @@ html[data-theme="light"] .tasks-page h2 {
 }
 
 /* Light theme overrides */
-html[data-theme="light"] .task-priority-badge[data-p="0"] { color: #2563eb; background: rgba(59,130,246,.1); border-color: rgba(59,130,246,.35); }
 html[data-theme="light"] .task-priority-badge[data-p="1"] { color: #16a34a; background: rgba(22,163,74,.1); border-color: rgba(22,163,74,.35); }
 html[data-theme="light"] .task-priority-badge[data-p="2"] { color: #a16207; background: rgba(202,138,4,.1); border-color: rgba(202,138,4,.35); }
 html[data-theme="light"] .task-priority-badge[data-p="3"] { color: #c2410c; background: rgba(234,88,12,.1); border-color: rgba(234,88,12,.35); }
@@ -194,7 +186,7 @@ html[data-theme="light"] .task-priority-badge[data-p="4"] { color: #dc2626; back
 .priority-picker {
     display: flex;
     gap: 6px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 .priority-btn {
     font-family: 'Outfit', sans-serif;
@@ -450,7 +442,7 @@ html[data-theme="light"] .task-deadline-badge.overdue {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 16px;
-    width: min(500px, 100%);
+    width: min(600px, 100%);
     max-height: 85vh;
     overflow-y: auto;
     display: flex;
@@ -791,7 +783,7 @@ html[data-theme="light"] .task-deadline-badge.overdue {
         {% with is_overdue=False %}
         <div class="task-box {% if task.deadline and task.deadline < now %}is-overdue{% endif %}"
              data-task="{{ task.id }}"
-             data-priority="{{ task.priority|default:0 }}"
+             data-priority="{{ task.priority|default:1 }}"
              data-edit-url="{% url 'edit_task' task.id %}"
              data-name="{{ task.name|escape }}"
              data-description="{{ task.description|default:''|escape }}"
@@ -814,7 +806,7 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                         {% endif %}
 
                         {# Priority badge #}
-                        {% if task.priority != 0 %}
+                        {% if task.priority %}
                         <span class="task-priority-badge" data-p="{{ task.priority }}">
                             {% if task.priority == 1 %}LOW
                             {% elif task.priority == 2 %}MED
@@ -904,7 +896,7 @@ html[data-theme="light"] .task-deadline-badge.overdue {
             {% for task in completed_tasks %}
             <div class="task-box is-completed"
                  data-task="{{ task.id }}"
-                 data-priority="{{ task.priority|default:0 }}"
+                 data-priority="{{ task.priority|default:1 }}"
                  data-edit-url="{% url 'edit_task' task.id %}"
                  data-name="{{ task.name|escape }}"
                  data-description="{{ task.description|default:''|escape }}"
@@ -925,7 +917,7 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                             </span>
                             {% endif %}
 
-                            {% if task.priority != 0 %}
+                            {% if task.priority %}
                             <span class="task-priority-badge" data-p="{{ task.priority }}">
                                 {% if task.priority == 1 %}LOW
                                 {% elif task.priority == 2 %}MED
@@ -1038,21 +1030,19 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                 <textarea class="edit-textarea" id="modalComments"
                           placeholder="Extra context, notes, or details..."></textarea>
             </div>
-            <div class="task-modal-grid">
-                <div>
-                    <label class="field-label">Priority</label>
-                    <div class="priority-picker">
-                        <button type="button" class="priority-btn" data-val="1">Low</button>
-                        <button type="button" class="priority-btn" data-val="2">Med</button>
-                        <button type="button" class="priority-btn" data-val="3">High</button>
-                        <button type="button" class="priority-btn" data-val="4">Urgent</button>
-                    </div>
-                    <input type="hidden" id="modalPriority" value="2">
+            <div>
+                <label class="field-label">Priority</label>
+                <div class="priority-picker">
+                    <button type="button" class="priority-btn" data-val="1">Low</button>
+                    <button type="button" class="priority-btn" data-val="2">Med</button>
+                    <button type="button" class="priority-btn" data-val="3">High</button>
+                    <button type="button" class="priority-btn" data-val="4">Urgent</button>
                 </div>
-                <div>
-                    <label class="field-label">Quota (leave 1 if N/A)</label>
-                    <input class="edit-input" id="modalQuota" type="number" min="1" value="1">
-                </div>
+                <input type="hidden" id="modalPriority" value="2">
+            </div>
+            <div>
+                <label class="field-label">Quota (leave 1 if N/A)</label>
+                <input class="edit-input" id="modalQuota" type="number" min="1" value="1">
             </div>
             <div>
                 <label class="field-label">Deadline</label>
@@ -1216,7 +1206,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modalName.value.trim() !== '' ||
         modalComments.value.trim() !== '' ||
         modalDeadline.value !== '' ||
-        (modalPriority.value !== '0' && modalPriority.value !== '2') ||
+        modalPriority.value !== '2' ||
         modalQuota.value !== '1' ||
         modalAssignedUsers.length > 0;
 
@@ -1366,13 +1356,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     box.querySelector('.task-description').textContent = result.description || '';
                     const pb = box.querySelector('.task-priority-badge');
                     if (pb) {
-                        if (result.priority === 0) {
-                            pb.style.display = 'none';
-                        } else {
-                            pb.style.display = '';
-                            pb.textContent = PRIORITY_LABELS[result.priority] ?? '';
-                            pb.dataset.p   = result.priority;
-                        }
+                        pb.textContent = PRIORITY_LABELS[result.priority] ?? '';
+                        pb.dataset.p   = result.priority;
                     }
                     box.dataset.priority = result.priority;
 
