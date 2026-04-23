@@ -400,7 +400,7 @@ def add_task(request):
     if not request.user.profile.is_exec():
         return redirect('tasks')
 
-    Task.objects.create(
+    task = Task.objects.create(
         name="New Task",
         description="",
         team=request.user.profile.team,
@@ -408,7 +408,7 @@ def add_task(request):
         actions_completed=0,
         priority=0
     )
-    return redirect('tasks')
+    return redirect(f'/tasks/?edit_task={task.id}')
 
 
 @login_required

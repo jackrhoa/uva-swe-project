@@ -919,6 +919,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // Priority label map
     const PRIORITY_LABELS = { 0: 'PENDING SETUP', 1: 'LOW', 2: 'MED', 3: 'HIGH', 4: 'URGENT' };
 
+    // ── Auto-open edit panel for newly created task ──
+    const params = new URLSearchParams(window.location.search);
+    const editTaskId = params.get('edit_task');
+    if (editTaskId) {
+        const newBox = document.querySelector(`.task-box[data-task="${editTaskId}"]`);
+        if (newBox) {
+            const editDiv = newBox.querySelector('.task-edit');
+            const editBtn = newBox.querySelector('.edit-btn');
+            if (editDiv) {
+                editDiv.style.display = 'block';
+                if (editBtn) editBtn.style.display = 'none';
+                newBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const nameInput = editDiv.querySelector('.edit-name');
+                if (nameInput) { nameInput.focus(); nameInput.select(); }
+            }
+        }
+        history.replaceState(null, '', window.location.pathname);
+    }
+
     // ── Completed section toggle ──
     const toggle = document.getElementById('completedToggle');
     const completedContainer = document.getElementById('completedContainer');
