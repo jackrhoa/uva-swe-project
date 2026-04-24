@@ -1015,10 +1015,10 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                         {% for member in team_members %}
                         <label class="multi-select-option">
                             <input type="checkbox" class="member-cb"
-                                   value="{{ member.id }}"
-                                   data-name="{{ member.get_full_name|default:member.username }}"
-                                   data-initial="{{ member.first_name|make_list|first|default:member.username|make_list|first|upper }}"
-                                   data-is-team="false">
+                                value="{{ member.id }}"
+                                data-name="{{ member.get_full_name|default:member.username }} ({{ member.email }})"
+                                data-initial="{{ member.first_name|make_list|first|default:member.username|make_list|first|upper }}"
+                                data-is-team="false">
                             <span>
                                 {{ member.get_full_name|default:member.username }}{% if member == request.user %}<span style="font-size:0.72rem;font-weight:500;color:var(--text-muted);"> (you)</span>{% endif %}
                                 <small style="display:block;font-size:0.72rem;color:var(--text-muted);line-height:1.2;">{{ member.email }}</small>
