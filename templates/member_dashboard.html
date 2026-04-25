@@ -569,7 +569,6 @@ document.addEventListener('DOMContentLoaded', () => {
         attWs = new WebSocket(attWsUrl);
         attWs.onmessage = function(e) {
             var data = JSON.parse(e.data);
-            if (attMemberBadge.classList.contains('checked-off')) return;
             if (data.type === 'session_started') {
                 setBadge(data.checked_off ? 'checked-off' : 'live-unsub');
             } else if (data.type === 'session_ended') {
