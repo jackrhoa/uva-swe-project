@@ -389,7 +389,7 @@
 <script>
 let currentFilter = 'checked';
 let allMembers = [];
-let pollInterval = null;
+let pollInterval = null; // unused, kept to avoid reference errors
 
 function toggleAttendees() {
     const body = document.getElementById('attendees-body');
@@ -515,8 +515,34 @@ function getCookie(name) {
     return v ? v[2] : null;
 }
 
-// Initial fetch + start polling every 5 s
+// Initial fetch to populate on page load
 fetchMembers();
-pollInterval = setInterval(fetchMembers, 5000);
+
+// WebSocket: receive real-time check-in events
+var attLiveWs;
+function attLiveConnect() {
+    var wsUrl = (location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/attendance/';
+    attLiveWs = new WebSocket(wsUrl);
+    attLiveWs.onmessage = function(e) {
+        var data = JSON.parse(e.data);
+        if (data.type === 'member_checked_in') {
+            var existing = allMembers.find(function(m) { return m.id === data.member.id; });
+            if (existing) {
+                existing.checked_in = true;
+            } else {
+                allMembers.push(data.member);
+            }
+            updateCount();
+            var bodyOpen = document.getElementById('attendees-body').classList.contains('open');
+            if (bodyOpen) renderList();
+        } else if (data.type === 'session_ended') {
+            fetchMembers();
+        } else if (data.type === 'session_started') {
+            fetchMembers();
+        }
+    };
+    attLiveWs.onclose = function() { setTimeout(attLiveConnect, 3000); };
+}
+attLiveConnect();
 </script>
 {% endblock %}

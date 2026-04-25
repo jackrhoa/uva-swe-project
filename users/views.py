@@ -1,5 +1,7 @@
 import os
 from django.utils import timezone
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 from django.db import IntegrityError, models
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponseForbidden
@@ -523,6 +525,9 @@ def attendance_generate(request):
         started_at=timezone.now(),
         created_by=request.user,
     )
+    async_to_sync(get_channel_layer().group_send)("attendance", {
+        "type": "attendance.session.started",
+    })
     return JsonResponse({'ok': True, 'code': code, 'session_id': session.id})
 
 
@@ -537,6 +542,9 @@ def attendance_end(request):
     AttendanceSession.objects.filter(is_active=True).update(
         is_active=False, ended_at=timezone.now()
     )
+    async_to_sync(get_channel_layer().group_send)("attendance", {
+        "type": "attendance.session.ended",
+    })
     return JsonResponse({'ok': True})
 
 
@@ -560,6 +568,18 @@ def attendance_submit(request):
         code_entered=code_entered,
         success=success,
     )
+    if success:
+        user = request.user
+        async_to_sync(get_channel_layer().group_send)("attendance", {
+            "type": "attendance.member.checked.in",
+            "member": {
+                "id": user.id,
+                "name": user.get_full_name() or user.email,
+                "initial": (user.first_name or user.email)[0].upper(),
+                "team": user.profile.team.name,
+                "checked_in": True,
+            },
+        })
     return JsonResponse({'ok': True, 'result': 'success' if success else 'fail'})
 
 
