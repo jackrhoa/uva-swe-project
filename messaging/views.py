@@ -27,6 +27,7 @@ def get_allowed_users(current_user):
     if current_profile.is_exec():
         return (
             User.objects
+            .filter(profile__isnull=False)
             .exclude(pk=current_user.pk)
             .exclude(profile__role='admin')
             .select_related('profile')
