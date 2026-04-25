@@ -165,6 +165,22 @@ def get_announcements_for_user(user):
         .distinct()
     )
 
+def auto_mark_old_announcements_read(user):
+    from django.utils import timezone
+    cutoff = timezone.now()
+    announcements = get_announcements_for_user(user).filter(sent_at__lte=cutoff)
+    already_read = set(
+        AnnouncementRead.objects.filter(user=user, announcement__in=announcements)
+        .values_list('announcement_id', flat=True)
+    )
+    new_reads = [
+        AnnouncementRead(user=user, announcement=ann)
+        for ann in announcements
+        if ann.id not in already_read
+    ]
+    AnnouncementRead.objects.bulk_create(new_reads, ignore_conflicts=True)
+
+
 class AnnouncementRead(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='announcement_reads')
     announcement = models.ForeignKey('Announcement', on_delete=models.CASCADE, related_name='reads')
