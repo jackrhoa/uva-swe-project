@@ -801,7 +801,7 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                         {% if task.deadline %}
                         <span class="task-deadline-badge {% if task.deadline < now %}overdue{% endif %}"
                               data-deadline="{{ task.deadline.isoformat }}">
-                            🕐 {{ task.deadline|date:"M j, g:ia" }}
+                            🕐 {{ task.deadline|date:"M j, g:i A" }}
                         </span>
                         {% endif %}
 
@@ -862,9 +862,11 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                         <div class="task-user-chip team-chip" data-name="Whole team">ALL</div>
                         {% else %}
                         {% for user in task.active_users.all %}
-                        <div class="task-user-chip" data-name="{{ user.get_full_name|default:user.username }}" style="padding:0;overflow:hidden;">
+                        <div class="task-user-chip" data-name="{{ user.get_full_name|default:user.username }}">
                             {% if user.profile.avatar %}
-                                <img src="{{ user.profile.avatar.url }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">
+                                <div style="width:100%;height:100%;border-radius:50%;overflow:hidden;flex-shrink:0;">
+                                    <img src="{{ user.profile.avatar.url }}" style="width:100%;height:100%;object-fit:cover;display:block;">
+                                </div>
                             {% else %}
                                 {{ user.first_name|make_list|first }}{{ user.last_name|make_list|first }}
                             {% endif %}
@@ -913,7 +915,7 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                             {% if task.deadline %}
                             <span class="task-deadline-badge"
                                   data-deadline="{{ task.deadline.isoformat }}">
-                                🕐 {{ task.deadline|date:"M j, g:ia" }}
+                                🕐 {{ task.deadline|date:"M j, g:i A" }}
                             </span>
                             {% endif %}
 
@@ -971,9 +973,11 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                             <div class="task-user-chip team-chip" data-name="Whole team">ALL</div>
                             {% else %}
                             {% for user in task.active_users.all %}
-                            <div class="task-user-chip" data-name="{{ user.get_full_name|default:user.username }}" style="padding:0;overflow:hidden;">
+                            <div class="task-user-chip" data-name="{{ user.get_full_name|default:user.username }}">
                                 {% if user.profile.avatar %}
-                                    <img src="{{ user.profile.avatar.url }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">
+                                    <div style="width:100%;height:100%;border-radius:50%;overflow:hidden;flex-shrink:0;">
+                                        <img src="{{ user.profile.avatar.url }}" style="width:100%;height:100%;object-fit:cover;display:block;">
+                                    </div>
                                 {% else %}
                                     {{ user.first_name|make_list|first }}{{ user.last_name|make_list|first }}
                                 {% endif %}
@@ -1046,6 +1050,7 @@ html[data-theme="light"] .task-deadline-badge.overdue {
             <div>
                 <label class="field-label">Quota (leave 1 if N/A)</label>
                 <input class="edit-input" id="modalQuota" type="number" min="1" value="1">
+                <span id="quotaError" style="display:none;color:#f87171;font-size:0.75rem;margin-top:5px;font-family:'General Sans',sans-serif;line-height:1.4;"></span>
             </div>
             <div>
                 <label class="field-label">Deadline</label>
@@ -1107,17 +1112,94 @@ document.addEventListener('DOMContentLoaded', () => {
         return dt.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
     };
 
-    const updateProgressUI = (box, completed, total) => {
+    // ── Progress updater — rebuilds DOM if type changes (checkbox ↔ arrows) ──
+    const wireProgressControls = (box) => {
         const checkbox = box.querySelector('.single-checkbox');
-        if (checkbox) { checkbox.checked = completed >= 1; return; }
-        const pt = box.querySelector('.progress-text');
-        if (!pt) return;
-        pt.textContent = `${completed}/${total}`;
-        pt.dataset.completed = completed;
-        pt.dataset.total = total;
-        pt.className = 'progress-text';
-        if (completed >= total && total > 0) pt.classList.add('done');
-        else if (completed > 0) pt.classList.add('partial');
+        if (checkbox) {
+            checkbox.addEventListener('change', () => sendProgress(box, checkbox.checked ? 1 : 0));
+        }
+        const decBtn = box.querySelector('.dec-btn');
+        const incBtn = box.querySelector('.inc-btn');
+        if (decBtn) {
+            decBtn.addEventListener('click', () => {
+                const pt = box.querySelector('.progress-text');
+                const cur = parseInt(pt.dataset.completed, 10);
+                if (cur > 0) sendProgress(box, cur - 1);
+            });
+        }
+        if (incBtn) {
+            incBtn.addEventListener('click', () => {
+                const pt = box.querySelector('.progress-text');
+                const cur   = parseInt(pt.dataset.completed, 10);
+                const total = parseInt(pt.dataset.total, 10);
+                if (cur < total) sendProgress(box, cur + 1);
+            });
+        }
+    };
+
+    const updateProgressUI = (box, completed, total) => {
+        const progressContainer = box.querySelector('.task-progress');
+        const hasCheckbox = !!box.querySelector('.single-checkbox');
+        const hasArrows   = !!box.querySelector('.dec-btn');
+
+        if (Number(total) === 1) {
+            if (!hasCheckbox) {
+                // Swap arrows → checkbox
+                progressContainer.innerHTML = `
+                    <div class="task-checkbox-wrap">
+                        <input type="checkbox" class="task-checkbox single-checkbox"${completed >= 1 ? ' checked' : ''}>
+                    </div>`;
+                wireProgressControls(box);
+            } else {
+                box.querySelector('.single-checkbox').checked = completed >= 1;
+            }
+        } else {
+            if (!hasArrows) {
+                // Swap checkbox → arrows
+                const state = completed === 0 ? '' : completed >= total ? 'done' : 'partial';
+                progressContainer.innerHTML = `
+                    <button class="prog-btn dec-btn">◀</button>
+                    <span class="progress-text${state ? ' ' + state : ''}"
+                          data-completed="${completed}" data-total="${total}">
+                        ${completed}/${total}
+                    </span>
+                    <button class="prog-btn inc-btn">▶</button>`;
+                wireProgressControls(box);
+            } else {
+                const pt = box.querySelector('.progress-text');
+                pt.textContent = `${completed}/${total}`;
+                pt.dataset.completed = completed;
+                pt.dataset.total = total;
+                pt.className = 'progress-text';
+                if (completed >= total && total > 0) pt.classList.add('done');
+                else if (completed > 0) pt.classList.add('partial');
+            }
+        }
+    };
+
+    // ── Outer-scoped sendProgress so wireProgressControls can call it ──
+    const sendProgress = async (box, newVal) => {
+        const editUrl = box.dataset.editUrl;
+        try {
+            const res = await fetch(editUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
+                body: JSON.stringify({ actions_completed: newVal }),
+            });
+            const result = await res.json();
+            if (result.error) return;
+            updateProgressUI(box, result.actions_completed, result.total_actions);
+            const done = result.actions_completed >= result.total_actions;
+            box.classList.toggle('is-completed', done);
+            box.querySelector('.task-name').style.textDecoration = done ? 'line-through' : '';
+            const deadlineBadge = box.querySelector('.task-deadline-badge');
+            const dl = deadlineBadge ? new Date(deadlineBadge.dataset.deadline) : null;
+            const now = new Date();
+            box.classList.toggle('is-overdue', !!(dl && !done && dl < now));
+            if (deadlineBadge) deadlineBadge.classList.toggle('overdue', !!(dl && !done && dl < now));
+        } catch (err) {
+            console.error('Progress update failed:', err);
+        }
     };
 
     const updateUserChips = (box, users, wholeTeam) => {
@@ -1134,14 +1216,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const chip = document.createElement('div');
                 chip.className = 'task-user-chip';
                 chip.dataset.name = u.name;
-                chip.style.padding = '0';
-                chip.style.overflow = 'hidden';
                 if (u.avatar_url) {
+                    const wrap = document.createElement('div');
+                    wrap.style.cssText = 'width:100%;height:100%;border-radius:50%;overflow:hidden;flex-shrink:0;';
                     const img = document.createElement('img');
                     img.src = u.avatar_url;
-                    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';
-                    img.onerror = () => { chip.removeChild(img); chip.textContent = u.initial; chip.style.padding = ''; };
-                    chip.appendChild(img);
+                    img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+                    img.onerror = () => { chip.removeChild(wrap); chip.textContent = u.initial; };
+                    wrap.appendChild(img);
+                    chip.appendChild(wrap);
                 } else {
                     chip.textContent = u.initial;
                 }
@@ -1171,13 +1254,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // ── Quota validation ──
+    const modalQuota   = document.getElementById('modalQuota');
+    const quotaError   = document.getElementById('quotaError');
+
+    const validateQuota = (raw) => {
+        const s = String(raw).trim();
+        // Must be a plain number (no expressions, letters, etc.)
+        if (s === '' || !/^-?\d+(\.\d+)?$/.test(s)) return 'Must be a whole number (e.g. "5").';
+        const n = parseFloat(s);
+        if (!Number.isFinite(n))           return 'Must be a whole number.';
+        if (n !== Math.floor(n))           return 'Decimals not allowed — did you mean ' + Math.floor(n) + '?';
+        if (n <= 0)                        return 'Must be at least 1 (0 and negatives are invalid).';
+        if (n > 2147483647)                return 'Number is too large.';
+        return null; // valid
+    };
+
+    const showQuotaError = (msg) => {
+        if (!quotaError) return;
+        if (msg) { quotaError.textContent = msg; quotaError.style.display = 'block'; }
+        else      { quotaError.textContent = '';  quotaError.style.display = 'none'; }
+    };
+
+    if (modalQuota) {
+        modalQuota.addEventListener('input', () => {
+            showQuotaError(validateQuota(modalQuota.value));
+        });
+    }
+
     // ── Modal ──
-    const overlay      = document.getElementById('taskModalOverlay');
-    const modalTitle   = document.getElementById('taskModalTitle');
-    const modalName    = document.getElementById('modalName');
+    const overlay       = document.getElementById('taskModalOverlay');
+    const modalTitle    = document.getElementById('taskModalTitle');
+    const modalName     = document.getElementById('modalName');
     const modalComments = document.getElementById('modalComments');
     const modalPriority = document.getElementById('modalPriority');
-    const modalQuota   = document.getElementById('modalQuota');
     const modalDeadline = document.getElementById('modalDeadline');
     const modalTrigger = document.getElementById('modalTrigger');
     const modalDropdown = document.getElementById('modalDropdown');
@@ -1239,6 +1349,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modalComments.value = box.dataset.description || '';
         setPriorityPicker(box.dataset.priority || '2');
         modalQuota.value    = box.dataset.totalActions || '1';
+        showQuotaError(null);
         modalDeadline.value = box.dataset.deadline  || '';
 
         const rawIds = (box.dataset.activeUsers || '').split(',').filter(Boolean);
@@ -1266,6 +1377,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modalComments.value = '';
         setPriorityPicker('2');
         modalQuota.value    = '1';
+        showQuotaError(null);
         modalDeadline.value = '';
         modalAssignedUsers  = [];
         modalCheckboxes.forEach(cb => { cb.checked = false; });
@@ -1321,11 +1433,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Save / Create
         modalSaveBtn.addEventListener('click', async () => {
+            // Validate quota before anything else
+            const quotaErr = validateQuota(modalQuota.value);
+            if (quotaErr) { showQuotaError(quotaErr); modalQuota.focus(); return; }
+            showQuotaError(null);
+            // Normalise "5.0" → "5"
+            const quotaVal = String(Math.floor(parseFloat(modalQuota.value)));
             const wholeTeam = modalAssignedUsers.some(u => u.isTeam);
             const payload = {
                 name:          modalName.value,
                 description:   modalComments.value,
-                total_actions: modalQuota.value,
+                total_actions: quotaVal,
                 priority:      modalPriority.value,
                 deadline:      modalDeadline.value,
                 whole_team:    wholeTeam,
@@ -1356,7 +1474,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (result.error) { console.error('Save error:', result.error); return; }
 
                     box.querySelector('.task-name').textContent        = result.name;
-                    box.querySelector('.task-description').textContent = result.description || '';
+                    const descEl = box.querySelector('.task-description');
+                    if (descEl) { descEl.textContent = result.description || ''; }
+                    else if (result.description) {
+                        const d = document.createElement('div');
+                        d.className = 'task-description';
+                        d.textContent = result.description;
+                        box.querySelector('.task-view').insertBefore(d, box.querySelector('.task-footer'));
+                    }
                     const pb = box.querySelector('.task-priority-badge');
                     if (pb) {
                         pb.textContent = PRIORITY_LABELS[result.priority] ?? '';
@@ -1394,82 +1519,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Wire up every task card ──
     document.querySelectorAll('.task-box').forEach(box => {
-        const editUrl = box.dataset.editUrl;
         const editBtn = box.querySelector('.edit-btn');
-
         if (editBtn) {
             editBtn.addEventListener('click', () => openModal(box));
         }
-
-        // ── Single-action checkbox ──
-        const checkbox = box.querySelector('.single-checkbox');
-        const sendProgress = async (newVal) => {
-            try {
-                const res = await fetch(editUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
-                    body: JSON.stringify({ actions_completed: newVal }),
-                });
-                const result = await res.json();
-                if (result.error) return;
-                updateProgressUI(box, result.actions_completed, result.total_actions);
-                const done = result.actions_completed >= result.total_actions;
-                box.classList.toggle('is-completed', done);
-                box.querySelector('.task-name').style.textDecoration = done ? 'line-through' : '';
-                const deadlineBadge = box.querySelector('.task-deadline-badge');
-                const dl = deadlineBadge ? new Date(deadlineBadge.dataset.deadline) : null;
-                const now = new Date();
-                box.classList.toggle('is-overdue', !!(dl && !done && dl < now));
-                if (deadlineBadge) deadlineBadge.classList.toggle('overdue', !!(dl && !done && dl < now));
-            } catch (err) {
-                console.error('Progress update failed:', err);
-            }
-        };
-
-        if (checkbox) {
-            checkbox.addEventListener('change', () => sendProgress(checkbox.checked ? 1 : 0));
-        }
-
-        const decBtn = box.querySelector('.dec-btn');
-        const incBtn = box.querySelector('.inc-btn');
-        if (decBtn) {
-            decBtn.addEventListener('click', () => {
-                const pt = box.querySelector('.progress-text');
-                const cur = parseInt(pt.dataset.completed, 10);
-                if (cur > 0) sendProgress(cur - 1);
-            });
-        }
-        if (incBtn) {
-            incBtn.addEventListener('click', () => {
-                const pt = box.querySelector('.progress-text');
-                const cur   = parseInt(pt.dataset.completed, 10);
-                const total = parseInt(pt.dataset.total, 10);
-                if (cur < total) sendProgress(cur + 1);
-            });
-        }
+        wireProgressControls(box);
     });
 
     // ── Delete confirmation popups ──
     document.querySelectorAll('.delete-btn').forEach(btn => {
         const popup = btn.nextElementSibling;
+        const taskBox = btn.closest('.task-box');
+
+        const closePopup = () => {
+            popup.classList.remove('open');
+            if (taskBox) taskBox.style.zIndex = '';
+        };
 
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
+            // Close any other open popups
             document.querySelectorAll('.delete-confirm-popup.open').forEach(p => {
-                if (p !== popup) p.classList.remove('open');
+                if (p !== popup) {
+                    p.classList.remove('open');
+                    const tb = p.closest('.task-box');
+                    if (tb) tb.style.zIndex = '';
+                }
             });
             popup.classList.toggle('open');
+            if (taskBox) taskBox.style.zIndex = popup.classList.contains('open') ? '50' : '';
         });
 
         popup.querySelector('.delete-cancel').addEventListener('click', (e) => {
             e.stopPropagation();
-            popup.classList.remove('open');
+            closePopup();
         });
     });
 
     document.addEventListener('click', () => {
-        document.querySelectorAll('.delete-confirm-popup.open')
-            .forEach(p => p.classList.remove('open'));
+        document.querySelectorAll('.delete-confirm-popup.open').forEach(p => {
+            p.classList.remove('open');
+            const tb = p.closest('.task-box');
+            if (tb) tb.style.zIndex = '';
+        });
     });
 });
 </script>
