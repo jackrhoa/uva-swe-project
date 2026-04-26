@@ -638,3 +638,42 @@ class DeleteAccountTests(TestCase):
         self.client.login(username='execuser', password='testpass123')
         response = self.client.post('/profile/delete/')
         self.assertTrue(User.objects.filter(username='execuser').exists())
+
+
+class SuperuserAccessTests(TestCase):
+    """Superusers should only be able to access /admin/, not any app pages."""
+
+    APP_PAGES = [
+        '/',
+        '/exec/',
+        '/member/',
+        '/admin-panel/',
+        '/profile/',
+        '/tasks/',
+        '/manage-roles/',
+        '/manage-teams/',
+        '/profile/edit/',
+        '/messages/',
+        '/announcements/',
+        '/attendance/live/',
+        '/attendance/records/',
+    ]
+
+    def setUp(self):
+        self.superuser = User.objects.create_superuser(
+            username='superadmin', password='testpass123'
+        )
+        self.client.login(username='superadmin', password='testpass123')
+
+    def test_superuser_can_access_admin(self):
+        response = self.client.get('/admin/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_superuser_cannot_access_app_pages(self):
+        for path in self.APP_PAGES:
+            with self.subTest(path=path):
+                response = self.client.get(path, follow=False)
+                self.assertIn(
+                    response.status_code, [302, 403, 404],
+                    msg=f"Expected redirect/forbidden for superuser at {path}, got {response.status_code}"
+                )
