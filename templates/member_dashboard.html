@@ -534,6 +534,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 attSubmitHint.textContent = '✓ Correct! You\'re checked off.';
                 attSubmitHint.className = 'att-submit-hint ok';
                 setBadge('checked-off');
+            } else if (data.result === 'error') {
+                attSubmitHint.textContent = data.message;
+                attSubmitHint.className = 'att-submit-hint err';
             } else {
                 attCodeInput.classList.add('fail-state');
                 attSubmitHint.textContent = '✕ Incorrect code. Try again.';

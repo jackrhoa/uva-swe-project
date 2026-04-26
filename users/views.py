@@ -254,10 +254,7 @@ def add_team(request):
     if request.method == 'POST':
         team_name = request.POST.get('team_name')
         if team_name:
-            try:
-                Team.objects.create(name=team_name)
-            except IntegrityError:
-                pass
+            Team.objects.get_or_create(name=team_name)
     return redirect('manage_teams')
 
 @login_required
@@ -556,6 +553,9 @@ def attendance_submit(request):
 
     data = json.loads(request.body)
     code_entered = data.get('code', '').strip().upper()
+
+    if not request.user.email:
+        return JsonResponse({'ok': False, 'result': 'error', 'message': 'Your account has no email address. Please sign in with Google to submit attendance.'}, status=403)
 
     active_session = AttendanceSession.get_active()
     if not active_session:

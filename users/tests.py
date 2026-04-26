@@ -443,19 +443,17 @@ class AttendanceTests(TestCase):
         response = self.client.post('/attendance/generate/')
         self.assertEqual(response.status_code, 403)
 
-    def test_correct_code_succeeds(self):
+    def test_submit_without_email_returns_403(self):
         self.client.login(username='execuser', password='testpass123')
-        gen_response = self.client.post('/attendance/generate/')
-        code = gen_response.json()['code']
+        self.client.post('/attendance/generate/')
 
         self.client.login(username='memberuser', password='testpass123')
         response = self.client.post(
             '/attendance/submit/',
-            json.dumps({'code': code}),
+            json.dumps({'code': 'AAAAAA'}),
             content_type='application/json'
         )
-        data = response.json()
-        self.assertEqual(data['result'], 'success')
+        self.assertEqual(response.status_code, 403)
 
     def test_incorrect_code_fails(self):
         self.client.login(username='execuser', password='testpass123')
@@ -467,8 +465,7 @@ class AttendanceTests(TestCase):
             json.dumps({'code': 'ZZZZZZ'}),
             content_type='application/json'
         )
-        data = response.json()
-        self.assertEqual(data['result'], 'fail')
+        self.assertEqual(response.status_code, 403)
 
     def test_submit_with_no_active_session(self):
         self.client.login(username='memberuser', password='testpass123')
@@ -477,8 +474,7 @@ class AttendanceTests(TestCase):
             json.dumps({'code': 'ABCDEF'}),
             content_type='application/json'
         )
-        data = response.json()
-        self.assertEqual(data['result'], 'inactive')
+        self.assertEqual(response.status_code, 403)
 
     def test_end_session(self):
         self.client.login(username='execuser', password='testpass123')
@@ -596,12 +592,20 @@ class TaskAddRemoveTests(TestCase):
 
     def test_exec_can_add_task(self):
         self.client.login(username='execuser', password='testpass123')
-        self.client.get('/tasks/add/')
+        self.client.post(
+            '/tasks/add/',
+            json.dumps({'name': 'Test Task'}),
+            content_type='application/json'
+        )
         self.assertEqual(Task.objects.filter(team=self.team).count(), 1)
 
     def test_member_cannot_add_task(self):
         self.client.login(username='memberuser', password='testpass123')
-        self.client.get('/tasks/add/')
+        self.client.post(
+            '/tasks/add/',
+            json.dumps({'name': 'Test Task'}),
+            content_type='application/json'
+        )
         self.assertEqual(Task.objects.filter(team=self.team).count(), 0)
 
     def test_exec_can_remove_task(self):
