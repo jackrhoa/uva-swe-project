@@ -1,5 +1,5 @@
 from django.utils import timezone
-from django.db import IntegrityError, models
+from django.db import models
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.contrib.auth import logout
@@ -250,10 +250,7 @@ def add_team(request):
     if request.method == 'POST':
         team_name = request.POST.get('team_name')
         if team_name:
-            try:
-                Team.objects.create(name=team_name)
-            except IntegrityError:
-                pass
+            Team.objects.get_or_create(name=team_name)
     return redirect('manage_teams')
 
 @login_required
