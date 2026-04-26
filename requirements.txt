@@ -10,7 +10,6 @@ gunicorn==25.0.3
 gevent==24.11.1
 uvicorn[standard]==0.42.0
 channels==4.3.2
-channels_redis==4.2.1
 idna==3.11
 packaging==26.0
 psycopg2-binary==2.9.11
