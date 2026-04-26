@@ -95,6 +95,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static']
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -148,7 +149,7 @@ SOCIALACCOUNT_PROVIDERS = {
         'SCOPE': ['profile', 'email'],
         'AUTH_PARAMS': {
             'access_type': 'online',
-            'prompt': 'select_account' if DEBUG else 'none',
+            'prompt': 'select_account',
         },
         'APP': {
             'client_id': os.environ.get('GOOGLE_CLIENT_ID', ''),

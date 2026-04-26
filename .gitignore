@@ -20,3 +20,5 @@ message_attachments/
 CLAUDE.md
 
 .venv/
+
+staticfiles/
