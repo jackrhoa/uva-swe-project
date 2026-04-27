@@ -16,16 +16,11 @@
                 <!-- Avatar upload -->
                 <div class="mb-4 text-center">
                     <div style="margin-bottom:0.75rem;">
-                        {% if profile.avatar %}
-                            <img id="avatar-preview" src="{{ profile.avatar.url }}" alt="Profile picture"
-                                 style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--border-color);display:inline-block;">
-                        {% else %}
-                            <div id="avatar-placeholder" style="width:80px;height:80px;border-radius:50%;background:#4b5563;border:2px solid var(--border-color);display:inline-flex;align-items:center;justify-content:center;color:#d1d5db;font-size:1.4rem;font-weight:700;">
-                                {{ request.user.first_name|make_list|first }}{{ request.user.last_name|make_list|first }}
-                            </div>
-                            <img id="avatar-preview" src="" alt="Profile picture"
-                                 style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--border-color);display:none;">
-                        {% endif %}
+                        <div id="avatar-placeholder" style="width:80px;height:80px;border-radius:50%;background:#4b5563;border:2px solid var(--border-color);display:{% if profile.avatar %}none{% else %}inline-flex{% endif %};align-items:center;justify-content:center;color:#d1d5db;font-size:1.4rem;font-weight:700;">
+                            {{ request.user.first_name|make_list|first }}{{ request.user.last_name|make_list|first }}
+                        </div>
+                        <img id="avatar-preview" src="{% if profile.avatar %}{{ profile.avatar.url }}{% endif %}" alt="Profile picture"
+                             style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--border-color);display:{% if profile.avatar %}inline-block{% else %}none{% endif %};">
                     </div>
                     <label for="id_avatar" class="btn btn-sm profile-action-btn" style="cursor:pointer;">
                         <i class="bi bi-camera-fill me-1"></i>Change Photo
