@@ -1299,6 +1299,8 @@ x    .page-wrapper { padding-top: 0.75rem !important; padding-bottom: 0.75rem !i
             ws.onmessage = function (e) {
                 var data = JSON.parse(e.data);
 
+                if (data.type === 'ping') { ws.send(JSON.stringify({type: 'pong'})); return; }
+
                 if (data.type === 'message_deleted') {
                     var wrap = document.querySelector('.chat-bubble-wrap[data-message-id="' + data.message_id + '"]');
                     if (wrap) {
