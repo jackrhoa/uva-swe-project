@@ -1047,14 +1047,16 @@ html[data-theme="light"] .task-deadline-badge.overdue {
                 </div>
                 <input type="hidden" id="modalPriority" value="2">
             </div>
-            <div>
-                <label class="field-label">Quota (leave 1 if N/A)</label>
-                <input class="edit-input" id="modalQuota" type="number" min="1" value="1">
-                <span id="quotaError" style="display:none;color:#f87171;font-size:0.75rem;margin-top:5px;font-family:'General Sans',sans-serif;line-height:1.4;"></span>
-            </div>
-            <div>
-                <label class="field-label">Deadline</label>
-                <input class="edit-input" id="modalDeadline" type="datetime-local">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div>
+                    <label class="field-label">Quota (leave 1 if N/A)</label>
+                    <input class="edit-input" id="modalQuota" type="number" min="1" value="1">
+                    <span id="quotaError" style="display:none;color:#f87171;font-size:0.75rem;margin-top:5px;font-family:'General Sans',sans-serif;line-height:1.4;"></span>
+                </div>
+                <div>
+                    <label class="field-label">Deadline</label>
+                    <input class="edit-input" id="modalDeadline" type="datetime-local">
+                </div>
             </div>
         </div>
         <div class="task-modal-footer">
