@@ -682,6 +682,33 @@
         font-family: 'Outfit', sans-serif;
         white-space: nowrap;
     }
+
+    /* ── Mobile two-pane layout ───────────────────── */
+    .mobile-panel-hidden { display: none !important; }
+
+    .mobile-back-btn {
+        display: none;
+        align-items: center;
+        gap: 0.35rem;
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 0.88rem;
+        cursor: pointer;
+        padding: 0;
+        text-decoration: none;
+        transition: color 0.15s;
+        flex-shrink: 0;
+    }
+    .mobile-back-btn:hover { color: var(--text-primary); }
+
+    @media (max-width: 991.98px) {
+        .mobile-back-btn { display: inline-flex; }
+        .chat-shell { height: auto !important; min-height: calc(100vh - 72px); }
+        .left-panel-col { height: calc(100vh - 72px); }
+        #mob-right-panel { height: calc(100vh - 72px); }
+    }
+
 </style>
 {% endblock %}
 
@@ -690,7 +717,7 @@
 <div class="row g-3 chat-shell">
 
     {# ── Exec: left sidebar team selector ── #}
-    <div class="col-lg-4 animate-in delay-1 left-panel-col">
+    <div class="col-lg-4 animate-in delay-1 left-panel-col" id="mob-left-panel">
         <div class="glass-card mb-3 start-conversation-card">
             <h2>Team Chats</h2>
             <div class="team-search-wrap">
@@ -729,9 +756,12 @@
     </div>
 
     {# ── Exec: right chat panel ── #}
-    <div class="col-lg-8 animate-in delay-2" style="height:100%;">
+    <div class="col-lg-8 animate-in delay-2" style="height:100%;" id="mob-right-panel">
         <div class="glass-card chat-panel" style="height:100%;">
             <div class="chat-header">
+                <button class="mobile-back-btn me-1" onclick="showMobileSidebar()" aria-label="Back to team list">
+                    <i class="bi bi-arrow-left"></i>
+                </button>
                 <div class="chat-header-icon"><i class="bi bi-people-fill"></i></div>
                 <div class="chat-header-text">
                     <div class="chat-header-title">{{ team.name }}</div>
@@ -1594,4 +1624,33 @@
         });
     }
 </script>
+{% if is_exec and all_teams %}
+<script>
+    (function () {
+        if (window.innerWidth >= 992) return;
+        var leftPanel  = document.getElementById('mob-left-panel');
+        var rightPanel = document.getElementById('mob-right-panel');
+        if (!leftPanel || !rightPanel) return;
+
+        var hasTeamParam = window.location.search.indexOf('team=') !== -1;
+
+        function showSidebar() {
+            rightPanel.classList.add('mobile-panel-hidden');
+            leftPanel.classList.remove('mobile-panel-hidden');
+        }
+        function showChat() {
+            leftPanel.classList.add('mobile-panel-hidden');
+            rightPanel.classList.remove('mobile-panel-hidden');
+        }
+
+        if (hasTeamParam) {
+            showChat();
+        } else {
+            showSidebar();
+        }
+
+        window.showMobileSidebar = showSidebar;
+    })();
+</script>
+{% endif %}
 {% endblock %}

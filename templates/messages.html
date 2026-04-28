@@ -594,6 +594,32 @@ x    .page-wrapper { padding-top: 0.75rem !important; padding-bottom: 0.75rem !i
         text-transform: uppercase;
     }
 
+    /* ── Mobile two-pane layout ───────────────────── */
+    .mobile-panel-hidden { display: none !important; }
+
+    .mobile-back-btn {
+        display: none;
+        align-items: center;
+        gap: 0.35rem;
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 0.88rem;
+        cursor: pointer;
+        padding: 0;
+        margin-bottom: 0.65rem;
+        text-decoration: none;
+        transition: color 0.15s;
+    }
+    .mobile-back-btn:hover { color: var(--text-primary); }
+
+    @media (max-width: 991.98px) {
+        .mobile-back-btn { display: inline-flex; }
+        .chat-shell { height: auto !important; min-height: calc(100vh - 72px); }
+        .left-panel-col { height: calc(100vh - 72px); }
+        #right-panel-col { height: calc(100vh - 72px); }
+    }
+
 </style>
 {% endblock %}
 
@@ -671,9 +697,12 @@ x    .page-wrapper { padding-top: 0.75rem !important; padding-bottom: 0.75rem !i
         </div>
     </div>
 
-    <div class="col-lg-8 animate-in delay-2" style="height:100%;">
+    <div class="col-lg-8 animate-in delay-2" style="height:100%;" id="right-panel-col">
         <div class="glass-card chat-panel" style="height:100%;">
             {% if active_conversation %}
+                <a href="{% url 'message_list' %}" class="mobile-back-btn">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
                 {% if active_other_user %}
                     <h2>Chat with {{ active_other_user.first_name }} {{ active_other_user.last_name }}</h2>
                     <div class="tool-desc mb-3">{{ active_other_user.email }}</div>
@@ -1380,6 +1409,18 @@ x    .page-wrapper { padding-top: 0.75rem !important; padding-bottom: 0.75rem !i
         }
 
         connect();
+    })();
+</script>
+<script>
+    (function () {
+        if (window.innerWidth >= 992) return;
+        var leftPanel  = document.querySelector('.left-panel-col');
+        var rightPanel = document.getElementById('right-panel-col');
+        if (ACTIVE_CONVERSATION_ID) {
+            if (leftPanel) leftPanel.classList.add('mobile-panel-hidden');
+        } else {
+            if (rightPanel) rightPanel.classList.add('mobile-panel-hidden');
+        }
     })();
 </script>
 {% endblock %}
