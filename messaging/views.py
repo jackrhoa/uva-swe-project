@@ -355,6 +355,7 @@ def team_chat(request):
             Q(target=Announcement.TARGET_ALL)
             | Q(target=Announcement.TARGET_SPECIFIC, target_teams=team)
         )
+        .filter(sent_at__gte=team_conversation.created_at)
         .select_related('sent_by')
         .distinct()
         .order_by('sent_at')

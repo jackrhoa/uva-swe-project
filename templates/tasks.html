@@ -1086,6 +1086,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const PRIORITY_LABELS = { 1: 'LOW', 2: 'MED', 3: 'HIGH', 4: 'URGENT' };
 
+    const showToast = (msg, type = 'error') => {
+        const iconMap = { success: 'check-circle-fill', error: 'exclamation-circle-fill', warning: 'exclamation-triangle-fill' };
+        const wrap = document.createElement('div');
+        wrap.className = 'container mt-3';
+        wrap.style.maxWidth = '1060px';
+        const el = document.createElement('div');
+        el.className = `alert alert-custom alert-${type} d-flex align-items-center animate-in`;
+        el.setAttribute('role', 'alert');
+        el.innerHTML = `<i class="bi bi-${iconMap[type] || 'info-circle-fill'} me-2"></i>${msg}`;
+        wrap.appendChild(el);
+        const pageWrapper = document.querySelector('.page-wrapper');
+        pageWrapper.parentElement.insertBefore(wrap, pageWrapper);
+        setTimeout(() => wrap.remove(), 5000);
+    };
+
     const priorityBtns = document.querySelectorAll('.priority-btn');
     const modalPriorityInput = document.getElementById('modalPriority');
     const setPriorityPicker = (val) => {
@@ -1437,6 +1452,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const quotaErr = validateQuota(modalQuota.value);
             if (quotaErr) { showQuotaError(quotaErr); modalQuota.focus(); return; }
             showQuotaError(null);
+            modalSaveBtn.disabled = true;
             // Normalise "5.0" → "5"
             const quotaVal = String(Math.floor(parseFloat(modalQuota.value)));
             const wholeTeam = modalAssignedUsers.some(u => u.isTeam);
@@ -1457,13 +1473,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: JSON.stringify(payload),
                     });
                     const result = await res.json();
-                    if (result.error) { console.error('Create error:', result.error); return; }
+                    if (result.error) { console.error('Create error:', result.error); modalSaveBtn.disabled = false; return; }
                     window.location = '/tasks/';
                 } catch (err) {
                     console.error('Create failed:', err);
+                    modalSaveBtn.disabled = false;
                 }
             } else {
                 const box = modalCurrentBox;
+                closeModal(true);
                 try {
                     const res = await fetch(box.dataset.editUrl, {
                         method: 'POST',
@@ -1471,7 +1489,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: JSON.stringify(payload),
                     });
                     const result = await res.json();
-                    if (result.error) { console.error('Save error:', result.error); return; }
+                    if (result.error) { showToast('Could not save task.'); return; }
 
                     box.querySelector('.task-name').textContent        = result.name;
                     const descEl = box.querySelector('.task-description');
@@ -1506,10 +1524,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     box.dataset.deadline    = result.deadline || '';
                     box.dataset.wholeTeam   = result.whole_team ? 'true' : 'false';
                     box.dataset.activeUsers = result.whole_team ? '' : result.active_users.map(u => u.id).join(',');
-
-                    closeModal(true);
                 } catch (err) {
-                    console.error('Save failed:', err);
+                    showToast('Could not save task.');
                 }
             }
         });
