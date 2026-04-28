@@ -90,8 +90,7 @@
                     </div>
                 </div>
 
-                <!-- Delete Account (members only) -->
-                {% if not profile.is_exec %}
+                <!-- Delete Account -->
                 <div id="delete-default">
                     <button type="button" class="tool-item w-100 text-start border-0" style="padding:0.6rem 0.65rem;cursor:pointer;" onclick="document.getElementById('delete-default').style.display='none';document.getElementById('delete-confirm').style.display='block';">
                         <i class="bi bi-trash3-fill" style="color:var(--danger,#ef4444);font-size:0.9rem;"></i>
@@ -109,7 +108,6 @@
                         </form>
                     </div>
                 </div>
-                {% endif %}
             </div>
         </div>
     </div>

@@ -339,8 +339,6 @@ def exec_edit_user(request, user_id):
 
 @login_required
 def delete_account(request):
-    if request.user.profile.is_exec():
-        return redirect('profile')
     if request.method == 'POST':
         user = request.user
         logout(request)

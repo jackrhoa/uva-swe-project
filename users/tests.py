@@ -633,11 +633,11 @@ class DeleteAccountTests(TestCase):
         response = self.client.post('/profile/delete/')
         self.assertFalse(User.objects.filter(username='deleteme').exists())
 
-    def test_exec_cannot_delete_account(self):
+    def test_exec_can_delete_account(self):
         exec_user = make_user('execuser', role='exec', team=self.team)
         self.client.login(username='execuser', password='testpass123')
         response = self.client.post('/profile/delete/')
-        self.assertTrue(User.objects.filter(username='execuser').exists())
+        self.assertFalse(User.objects.filter(username='execuser').exists())
 
 
 class SuperuserAccessTests(TestCase):
