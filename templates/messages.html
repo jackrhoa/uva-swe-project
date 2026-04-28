@@ -1413,14 +1413,26 @@ x    .page-wrapper { padding-top: 0.75rem !important; padding-bottom: 0.75rem !i
 </script>
 <script>
     (function () {
-        if (window.innerWidth >= 992) return;
         var leftPanel  = document.querySelector('.left-panel-col');
         var rightPanel = document.getElementById('right-panel-col');
-        if (ACTIVE_CONVERSATION_ID) {
-            if (leftPanel) leftPanel.classList.add('mobile-panel-hidden');
-        } else {
-            if (rightPanel) rightPanel.classList.add('mobile-panel-hidden');
+
+        function applyMobileLayout() {
+            if (window.innerWidth >= 992) {
+                if (leftPanel)  leftPanel.classList.remove('mobile-panel-hidden');
+                if (rightPanel) rightPanel.classList.remove('mobile-panel-hidden');
+                return;
+            }
+            if (ACTIVE_CONVERSATION_ID) {
+                if (leftPanel)  leftPanel.classList.add('mobile-panel-hidden');
+                if (rightPanel) rightPanel.classList.remove('mobile-panel-hidden');
+            } else {
+                if (leftPanel)  leftPanel.classList.remove('mobile-panel-hidden');
+                if (rightPanel) rightPanel.classList.add('mobile-panel-hidden');
+            }
         }
+
+        applyMobileLayout();
+        window.addEventListener('resize', applyMobileLayout);
     })();
 </script>
 {% endblock %}

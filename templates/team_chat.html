@@ -1627,28 +1627,39 @@
 {% if is_exec and all_teams %}
 <script>
     (function () {
-        if (window.innerWidth >= 992) return;
         var leftPanel  = document.getElementById('mob-left-panel');
         var rightPanel = document.getElementById('mob-right-panel');
         if (!leftPanel || !rightPanel) return;
 
         var hasTeamParam = window.location.search.indexOf('team=') !== -1;
+        var userChoseSidebar = false;
 
         function showSidebar() {
+            userChoseSidebar = true;
             rightPanel.classList.add('mobile-panel-hidden');
             leftPanel.classList.remove('mobile-panel-hidden');
         }
         function showChat() {
+            userChoseSidebar = false;
             leftPanel.classList.add('mobile-panel-hidden');
             rightPanel.classList.remove('mobile-panel-hidden');
         }
 
-        if (hasTeamParam) {
-            showChat();
-        } else {
-            showSidebar();
+        function applyLayout() {
+            if (window.innerWidth >= 992) {
+                leftPanel.classList.remove('mobile-panel-hidden');
+                rightPanel.classList.remove('mobile-panel-hidden');
+                return;
+            }
+            if (userChoseSidebar || !hasTeamParam) {
+                showSidebar();
+            } else {
+                showChat();
+            }
         }
 
+        applyLayout();
+        window.addEventListener('resize', applyLayout);
         window.showMobileSidebar = showSidebar;
     })();
 </script>
