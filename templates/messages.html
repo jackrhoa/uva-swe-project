@@ -615,9 +615,11 @@ x    .page-wrapper { padding-top: 0.75rem !important; padding-bottom: 0.75rem !i
 
     @media (max-width: 991.98px) {
         .mobile-back-btn { display: inline-flex; }
-        .chat-shell { height: auto !important; min-height: calc(100vh - 72px); }
-        .left-panel-col { height: calc(100vh - 72px); }
-        #right-panel-col { height: calc(100vh - 72px); }
+        .page-wrapper { padding: 0 0.75rem !important; }
+        .chat-shell { height: calc(100vh - 72px) !important; }
+        .left-panel-col, #right-panel-col { height: 100% !important; }
+        .chat-messages { min-height: 0 !important; }
+        .chat-input-bar { flex-shrink: 0; }
     }
 
 </style>
