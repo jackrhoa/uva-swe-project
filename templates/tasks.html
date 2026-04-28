@@ -1407,7 +1407,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (overlay) {
         document.getElementById('taskModalClose').addEventListener('click', () => closeModal());
         document.getElementById('taskModalCancel').addEventListener('click', () => closeModal());
-        overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+        let overlayMousedownTarget = null;
+        overlay.addEventListener('mousedown', (e) => { overlayMousedownTarget = e.target; });
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay && overlayMousedownTarget === overlay) closeModal();
+            overlayMousedownTarget = null;
+        });
 
         modalName.addEventListener('input', () => {
             modalSaveBtn.disabled = modalName.value.trim() === '';
