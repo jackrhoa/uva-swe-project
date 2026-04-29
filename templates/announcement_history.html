@@ -181,7 +181,7 @@ html[data-theme="light"] .ann-card.ann-unread {
 
             <div class="ann-card-footer">
                 <span>
-                    — {{ ann.sent_by.get_full_name|default:ann.sent_by.username }}
+                    — {% if ann.sent_by %}{{ ann.sent_by.get_full_name|default:ann.sent_by.username }}{% else %}Deleted user{% endif %}
                     &nbsp;·&nbsp;
                     {% if ann.target == 'all' %}
                         <span class="ann-target-chip"><i class="bi bi-globe2"></i> All Teams</span>

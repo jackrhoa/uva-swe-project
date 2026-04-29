@@ -810,7 +810,7 @@
                             <div class="team-ann-body">{{ item.obj.body }}</div>
                             <div class="team-ann-footer">
                                 <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                                    — {{ item.obj.sent_by.get_full_name|default:item.obj.sent_by.username }}
+                                    — {% if item.obj.sent_by %}{{ item.obj.sent_by.get_full_name|default:item.obj.sent_by.username }}{% else %}Deleted user{% endif %}
                                     {% if item.obj.target == 'all' %}
                                         <span class="ann-target-chip"><i class="bi bi-globe2"></i> All teams</span>
                                     {% else %}

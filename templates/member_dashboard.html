@@ -347,7 +347,7 @@ html[data-theme="light"] .att-submit-hint.err { color: #dc2626; }
                 <div class="ann-unread-body">{{ ann.body }}</div>
                 <div class="ann-unread-footer">
                     <span class="ann-unread-meta">
-                        {{ ann.sent_by.get_full_name|default:ann.sent_by.username }} · <span class="ann-ts" data-utc="{{ ann.sent_at.isoformat }}">{{ ann.sent_at|date:"M j, Y · g:i a" }}</span>
+                        {% if ann.sent_by %}{{ ann.sent_by.get_full_name|default:ann.sent_by.username }}{% else %}Deleted user{% endif %} · <span class="ann-ts" data-utc="{{ ann.sent_at.isoformat }}">{{ ann.sent_at|date:"M j, Y · g:i a" }}</span>
                         {% if ann.target == 'all' %}
                             · <span class="ann-target-chip"><i class="bi bi-globe2"></i> All Teams</span>
                         {% else %}
