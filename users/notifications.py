@@ -129,7 +129,7 @@ def notify_exec_direct_message(sender, recipient, message_body):
     except AttributeError:
         return  # No profile → not an exec, skip
  
-    if not recipient.email:
+    if not recipient or not recipient.email:
         return
  
     sender_name = sender.get_full_name() or sender.username
