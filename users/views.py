@@ -365,12 +365,12 @@ def tasks(request):
     uncompleted_tasks = (
         visible
         .filter(actions_completed__lt=models.F('total_actions'))
-        .order_by('-priority', 'name')
+        .order_by('-priority', models.F('deadline').asc(nulls_last=True))
     )
     completed_tasks = (
         visible
         .filter(actions_completed__gte=models.F('total_actions'))
-        .order_by('-priority', 'name')
+        .order_by('-priority', models.F('deadline').asc(nulls_last=True))
     )
 
     team_members = User.objects.filter(profile__team=team).exclude(profile__role='admin').exclude(is_superuser=True)
