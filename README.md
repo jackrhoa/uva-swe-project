@@ -14,7 +14,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ## Contributors
 
-Built by Team A-20 for CS 3240 at the University of Virginia.
+Built by CS 3240 (Software Engineering) at the University of Virginia.
 
 ---
 
